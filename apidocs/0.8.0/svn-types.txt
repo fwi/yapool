@@ -1,0 +1,5 @@
+*.css  = svn:mime-type=text/css
+*.html = svn:mime-type=text/html
+*.js   = svn:mime-type=text/javascript
+*.gif  = svn:mime-type=image/gif
+*.png  = svn:mime-type=image/png

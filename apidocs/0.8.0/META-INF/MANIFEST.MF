@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Built-By: Fred
+Build-Jdk: 1.7.0_05
+Created-By: Apache Maven
+Archiver-Version: Plexus Archiver
+

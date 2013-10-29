@@ -4,10 +4,11 @@
 	<parent>
 		<groupId>nl.fw.yapool</groupId>
 		<artifactId>yapool-parent</artifactId>
-		<version>0.8-SNAPSHOT</version>
+		<version>0.8.0</version>
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool-hib4</artifactId>
+	<version>0.8.0</version>
 	<name>Yapool Hibernate4</name>
 
 	<dependencies>

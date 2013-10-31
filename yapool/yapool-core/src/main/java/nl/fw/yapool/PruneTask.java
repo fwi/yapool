@@ -17,6 +17,7 @@ public class PruneTask implements Runnable {
 	private final ScheduledExecutorService executor;
 	private ScheduledFuture<?> scheduledTask;
 	private volatile boolean stop;
+	private volatile boolean started;
 	private PoolPruner pruner;
 	
 	public PruneTask(ScheduledExecutorService executor, PrunedPool<?> pool) {
@@ -36,7 +37,14 @@ public class PruneTask implements Runnable {
 	 */
 	public void start() {
 		stop = false;
-		scheduleTask();
+		if (started) {
+			if (pool.log.isTraceEnabled()) {
+				pool.log.trace(pool.getPoolName() + " pool pruner task already started.");
+			}
+		} else {
+			started = true;
+			scheduleTask();
+		}
 	}
 
 	/**
@@ -61,6 +69,9 @@ public class PruneTask implements Runnable {
 		
 		if (!stop) {
 			scheduledTask = executor.schedule(this, pool.getPruneIntervalMs(), TimeUnit.MILLISECONDS);
+			if (pool.log.isTraceEnabled()) {
+				pool.log.trace(pool.getPoolName() + " Scheduled new prune task.");
+			}
 		}
 	}
 	

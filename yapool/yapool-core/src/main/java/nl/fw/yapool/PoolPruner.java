@@ -52,7 +52,7 @@ public class PoolPruner {
      */
     public boolean add(PrunedPool<?> pool) {
     	
-    	if (pool == null) {
+    	if (pool == null || pool.isClosed()) {
     		return false;
     	}
     	if (pools.contains(pool)) {
@@ -73,7 +73,11 @@ public class PoolPruner {
     			pool.setPruneTask(createPruneTask(executor, pool));
     		}
     		pool.getPruneTask().setPruner(this);
-    		pool.getPruneTask().start();
+    		// pool task is started when pool is opened, 
+    		// but unit-tests first open the pool and then add it to the pruner. 
+    		if (pool.isOpen()) {
+    			pool.getPruneTask().start();
+    		}
 		}
     	return true;
     }

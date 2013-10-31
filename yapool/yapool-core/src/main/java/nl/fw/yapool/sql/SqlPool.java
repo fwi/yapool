@@ -40,8 +40,8 @@ public class SqlPool extends PrunedPool<Connection> {
 	@Override
 	public void open(int amount) {
 		
-		PoolPruner.getInstance().add(this);
 		getFactory().loadDbDriver();
+		PoolPruner.getInstance().add(this);
 		super.open(amount);
 	}
 

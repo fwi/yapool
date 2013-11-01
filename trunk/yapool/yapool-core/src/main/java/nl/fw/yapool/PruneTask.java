@@ -63,6 +63,9 @@ public class PruneTask implements Runnable {
 		if (pruner != null) {
 			pruner.remove(pool);
 		}
+		if (pool.log.isTraceEnabled()) {
+			pool.log.trace(pool.getPoolName() + " pool pruner task stopped.");
+		}
 	}
 	
 	private void scheduleTask() {
@@ -70,7 +73,7 @@ public class PruneTask implements Runnable {
 		if (!stop) {
 			scheduledTask = executor.schedule(this, pool.getPruneIntervalMs(), TimeUnit.MILLISECONDS);
 			if (pool.log.isTraceEnabled()) {
-				pool.log.trace(pool.getPoolName() + " Scheduled new prune task.");
+				pool.log.trace(pool.getPoolName() + " new pool pruner task scheduled.");
 			}
 		}
 	}

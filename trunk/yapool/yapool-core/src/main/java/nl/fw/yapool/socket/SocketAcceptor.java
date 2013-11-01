@@ -44,6 +44,7 @@ public class SocketAcceptor implements Runnable {
 	private AtomicLong tasksFinished = new AtomicLong();
 	private long closeWaitTimeMs = 30000L;
 	private SocketUsageLogger reporter;
+	private Throwable runError;
 
 	private Executor executor;
 	private boolean shutdownExecutorOnClose;
@@ -89,7 +90,7 @@ public class SocketAcceptor implements Runnable {
 
 	/**
 	 * Same as {@link #start()} but runs this socket server in the thread calling this method.
-	 * After socket server is closed, {@link #awaitTasks()} is called before returning.
+	 * After socket server is closed and this method returns, {@link #awaitTasks()} should be called before closing the application.
 	 * @return true if this SocketAcceptor started, false otherwise. 
 	 */
 	public boolean startBlocking() {
@@ -111,7 +112,6 @@ public class SocketAcceptor implements Runnable {
 		}
 		if (blocking) {
 			run();
-			awaitTasks();
 		} else {
 			executor.execute(this);
 		}
@@ -151,7 +151,7 @@ public class SocketAcceptor implements Runnable {
 	public void run() {
 
 		Socket s = null;
-		Throwable runError = null;
+		runError = null;
 		openTasks.set(0);
 		acceptedSockets.set(0L);
 		tasksFinished.set(0L);
@@ -261,6 +261,13 @@ public class SocketAcceptor implements Runnable {
 		serverSocket = null;
 		openPort = 0;
 		opened = false;
+	}
+	
+	/**
+	 * @return null or an unexpected exception that stopped the ServerSocket from working.
+	 */
+	public Throwable getRunError() {
+		return runError;
 	}
 	
 	/**

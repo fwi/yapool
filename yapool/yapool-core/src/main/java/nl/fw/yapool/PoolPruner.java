@@ -35,7 +35,7 @@ public class PoolPruner {
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
 
-    private ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(0);
+    private ScheduledExecutorService executor;
     private CopyOnWriteArrayList<PrunedPool<?>> pools = new CopyOnWriteArrayList<PrunedPool<?>>();
     private volatile boolean started;
     private boolean shutdownExecutor;
@@ -64,7 +64,7 @@ public class PoolPruner {
     	    	log.debug("Pool pruner starting.");
     			started = true;
     			if (getExecutor() == null) {
-    				setExecutor(new ScheduledThreadPoolExecutor(0));
+    				setExecutor(new ScheduledThreadPoolExecutor(1));
     				setShutdownExecutor(true);
     			}
     		}
@@ -94,7 +94,8 @@ public class PoolPruner {
     public boolean remove(PrunedPool<?>  pool) {
     	
     	if (pools.contains(pool)) {
-    		pools.remove(pool);
+       		pools.remove(pool);
+			pool.setPruneTask(null);
        		stopWhenEmpty();
     	}
     	return true;
@@ -127,6 +128,7 @@ public class PoolPruner {
         	pools.clear();
         	if (getExecutor() != null && isShutdownExecutor()) {
         		getExecutor().shutdown();
+               	log.trace("Pool pruner executor stopped.");
         		setExecutor(null);
         	}
         	log.debug("Pool pruner stopped.");

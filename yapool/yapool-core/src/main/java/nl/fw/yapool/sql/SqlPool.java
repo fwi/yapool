@@ -40,6 +40,9 @@ public class SqlPool extends PrunedPool<Connection> {
 	@Override
 	public void open(int amount) {
 		
+		if (getFactory() == null) {
+			throw new RuntimeException("SqlFactory must be set before opening SqlPool.");
+		}
 		getFactory().loadDbDriver();
 		PoolPruner.getInstance().add(this);
 		super.open(amount);

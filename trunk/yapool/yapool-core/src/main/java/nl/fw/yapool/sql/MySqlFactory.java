@@ -22,6 +22,7 @@ public class MySqlFactory extends SqlFactory {
 	/**
 	 * Overwrite some default SqlFactory values to use more appropriate MySql defaults.
 	 * More defaults can be set using {@link #applyStableConnectionProps(Properties)}.
+	 * <br>Note that autocommit is default set to false.
 	 */
 	public MySqlFactory() {
 		super();

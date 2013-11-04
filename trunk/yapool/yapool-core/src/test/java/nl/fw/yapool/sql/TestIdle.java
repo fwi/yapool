@@ -20,9 +20,9 @@ public class TestIdle {
 		pool.setFactory(new SqlFactory());
 		pool.open();
 		//PoolPruner.getInstance().remove(pool);
-		TestUtil.sleep(200000);
+		TestUtil.sleep(5000);
 		
-		
+		pool.close();
 	}
 
 }

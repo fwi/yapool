@@ -40,6 +40,7 @@ public class SqlFactory implements IPoolFactory<Connection> {
 	
 	/**
 	 * This method should be called once to load the database driver.
+	 * <br>A {@link SqlPool} will call this method when the pool is opened.
 	 * @throws RuntimeException if loading the driver failed.
 	 */
 	public Class<?> loadDbDriver()  {

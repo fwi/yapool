@@ -52,7 +52,7 @@ public class DbConn {
 	/** A resultset, used as placeholder for the query results of a query. */
 	public ResultSet rs;
 	
-	
+	/** Does nothing. */
 	public DbConn() { super(); }
 	
 	/** Sets {@link #pool} to given pool. */
@@ -61,7 +61,7 @@ public class DbConn {
 		this.pool = pool;
 	}
 	
-	/** Sets {@link #pool} to given pool. */
+	/** Sets {@link #pool} to given pool with prepared statement cache for connections. */
 	public DbConn(final SqlPool pool, IQueryCache qc) {
 		this.pool = pool;
 		this.qc = qc;
@@ -72,7 +72,7 @@ public class DbConn {
 		this.connFactory = connFactory;
 	}
 
-	/** Sets {@link #connFactory} to the given connection. */
+	/** Sets {@link #conn} to the given connection. */
 	public DbConn(final Connection conn) {
 		this.conn = conn;
 	}

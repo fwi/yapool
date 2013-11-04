@@ -8,7 +8,7 @@
 		<relativePath>yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool</artifactId>
-	<version>0.8.0</version>
+	<version>0.8.1</version>
 	<packaging>pom</packaging>
 
 	<name>Yapool Aggregator</name>

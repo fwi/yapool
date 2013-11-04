@@ -130,6 +130,25 @@ public class BeanConfig {
 	}
 	
 	/**
+	 * Applies prefix-filtered and prioritized properties to a bean.
+	 * @param bean The bean to configure with the properties (set to null to configure no bean).
+	 * @param props Original properties (remain unchanged).
+	 * @param prefix The prefix to filter on (set to null for none).
+	 * @param postfix The postfix to prioritize (set to null for none).
+	 * @return The filtered and prioritized properties. 
+	 */
+	public static Properties configure(Object bean, Map<?, ?> props, String prefix, String postfix) {
+		
+		Properties p = new Properties();
+		p.putAll(prefix == null || prefix.isEmpty() ? props : filterPrefix(props, prefix));
+		if (!(postfix == null || postfix.isEmpty())) {
+			prioritizeSuffix(p, postfix);
+		}
+		configure(bean, p);
+		return p;
+	}
+	
+	/**
 	 * Opposite function of {@link #configure(Object, Map)}: extracts bean values and puts them in the properties map.
 	 */
 	public static void extract(Object bean, Map<Object ,Object> props) {
@@ -364,7 +383,7 @@ public class BeanConfig {
 	 * Utility method, only sets the value in the map if the key is not already in the map.
 	 */
 	@SuppressWarnings("unchecked")
-	public static void setIfAbsent(Map<?,?> props, Object key, Object value) {
+	public static void putIfNotExists(Map<?,?> props, Object key, Object value) {
 		
 		if (!props.containsKey(key)) {
 			((Map<Object, Object>)props).put(key, value);

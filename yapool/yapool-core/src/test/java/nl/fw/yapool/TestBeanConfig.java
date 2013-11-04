@@ -111,4 +111,22 @@ public class TestBeanConfig {
 		BeanConfig.prioritizeSuffix(p, ".prod");
 		assertEquals("20", p.getProperty("maxsize"));
 	}
+	
+	@Test
+	public void filterAndPrioritizeProps() {
+
+		Properties p = new Properties();
+		p.setProperty("db.bean.maxsize.test", "10");
+		p.setProperty("db.maxsize.test", "11");
+		p.setProperty("d.maxsize.test", "12");
+		p.setProperty("db.bean.maxsize.prod", "20");
+		Properties f = BeanConfig.configure(null, p, "db.bean.", ".test");
+		assertEquals("10", f.getProperty("maxsize"));
+		f = BeanConfig.configure(null, p, "db.", ".test");
+		assertEquals("11", f.getProperty("maxsize"));
+		// Original properties must be unchanged.
+		assertEquals(4, p.keySet().size());
+		assertEquals("10", p.getProperty("db.bean.maxsize.test"));
+	}
+
 }

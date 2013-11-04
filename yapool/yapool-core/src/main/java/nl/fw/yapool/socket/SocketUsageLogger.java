@@ -1,7 +1,11 @@
 package nl.fw.yapool.socket;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import nl.fw.yapool.PoolPruner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +22,11 @@ import org.slf4j.LoggerFactory;
  */
 public class SocketUsageLogger implements Runnable {
 
-	protected Logger log = LoggerFactory.getLogger(getClass());
+	/** 
+	 * Logger used to log report.
+	 * Can be changed to a logger with category "{@code usage.report}" for example.
+	 */
+	public Logger log = LoggerFactory.getLogger(getClass());
 
 	protected long lastAccepted;
 	protected long lastProcessing;
@@ -28,6 +36,9 @@ public class SocketUsageLogger implements Runnable {
 	private long reportIntervalMs = 10000L;
 	private SocketAcceptor acceptor;
 	private String threadName;
+	private boolean runAsTask;
+	private ScheduledExecutorService scheduledExecutor;
+	private ScheduledFuture<?> scheduledTask;
 
 	private volatile boolean stop;
 	private Semaphore sleepLock = new Semaphore(0);
@@ -72,6 +83,10 @@ public class SocketUsageLogger implements Runnable {
 		}
 	}
 
+	/**
+	 * Starts as a run-loop in a thread from the {@link #getSocketAcceptor()}'s executor.
+	 * To run as a scheduled task, use {@link #start(ScheduledExecutorService)}.
+	 */
 	public void start() {
 		
 		if (acceptor == null) {
@@ -80,18 +95,62 @@ public class SocketUsageLogger implements Runnable {
 			acceptor.getExecutor().execute(this);
 		}
 	}
+
+	/**
+	 * Schedules a task for reporting, this task will repeat until {@link #stop()} is called.
+	 * @param scheduler The scheduled executor service (from {@link PoolPruner} for example).
+	 */
+	public void start(ScheduledExecutorService scheduler) {
+		
+		runAsTask = true;
+		this.scheduledExecutor = scheduler;
+		scheduleTask();
+	}
 	
+	protected void scheduleTask() {
+		scheduledTask = scheduledExecutor.schedule(this, getReportIntervalMs(), TimeUnit.MILLISECONDS);
+	}
+
 	public void stop() {
+		
 		stop = true;
-		sleepLock.release();
+		if (runAsTask) {
+			if (scheduledTask != null) {
+				scheduledTask.cancel(false);
+			}
+		} else {
+			sleepLock.release();
+		}
 	}
 
 	/**
-	 * Reports in a loop, but only when there are changes in the reported numbers.
+	 * Reports in a loop or as a repeating scheduled task.
+	 * Only reports if there are changes in the previously reported numbers.
 	 */
 	@Override
 	public void run() {
 
+		if (runAsTask) {
+			runAsTask();
+		} else {
+			runInThread();
+		}
+	}
+	
+	protected void runAsTask() {
+		
+		if (stop) {
+			scheduledTask = null;
+		} else {
+			if (report()) {
+				log.info(getReport());
+			}
+			scheduleTask();
+		}
+	}
+	
+	protected void runInThread() {
+		
 		String orgThreadName = null;
 		if (threadName != null) {
 			orgThreadName = Thread.currentThread().getName();
@@ -99,10 +158,9 @@ public class SocketUsageLogger implements Runnable {
 		}
 		try {
 			while (!stop) {
-				boolean report = (acceptor.getAcceptedCount() != lastAccepted);
-				if (!report) report = (acceptor.getTasksFinished() != lastProcessed);
-				if (!report) report = (acceptor.getOpenTasks() != lastProcessing);
-				if (report) log.info(getReport());
+				if (report()) {
+					log.info(getReport());
+				}
 				try {
 					if (sleepLock.tryAcquire(reportIntervalMs, TimeUnit.MILLISECONDS)) {
 						stop = true;
@@ -120,9 +178,21 @@ public class SocketUsageLogger implements Runnable {
 			}
 		}
 	}
+	
+	/**
+	 * Evaluates the "lastCount" values.
+	 * @return true if any values have changed since last call to {@link #getReport()}.
+	 */
+	public boolean report() {
+		
+		boolean report = (acceptor.getAcceptedCount() != lastAccepted);
+		if (!report) report = (acceptor.getTasksFinished() != lastProcessed);
+		if (!report) report = (acceptor.getOpenTasks() != lastProcessing);
+		return report;
+	}
 
 	/** Creates a report for the log and updates the "lastCount" values. */
-	protected String getReport() {
+	public String getReport() {
 
 		StringBuilder sb = new StringBuilder(128);
 

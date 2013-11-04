@@ -24,11 +24,11 @@ public class HsqlPoolBuilder implements IPoolBuilder {
 
 		SqlProxyPool pool = new SqlProxyPool();
 		pool.setFactory(new SqlFactory());
-		setIfAbsent(props, "poolName", "HsqlTestDb");
-		setIfAbsent(props, "jdbcUrl", JDBC_URL_TEST_IN_MEM);
-		setIfAbsent(props, "jdbcDriverClass", JDBC_DRIVER_CLASS);
-		setIfAbsent(props, "connection.user", "SA");
-		setIfAbsent(props, "connection.password", "");
+		putIfNotExists(props, "poolName", "HsqlTestDb");
+		putIfNotExists(props, "jdbcUrl", JDBC_URL_TEST_IN_MEM);
+		putIfNotExists(props, "jdbcDriverClass", JDBC_DRIVER_CLASS);
+		putIfNotExists(props, "connection.user", "SA");
+		putIfNotExists(props, "connection.password", "");
 		BeanConfig.configure(pool, props);
 		BeanConfig.configure(pool.getFactory(), props);
 		pool.open();

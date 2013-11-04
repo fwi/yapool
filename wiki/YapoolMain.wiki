@@ -2,10 +2,10 @@
 
 Yet another pool - a generic pool implementation for Java.
 
-For details, please read the main Yapool package description in the [https://yapool.googlecode.com/svn/tags/yapool/apidocs/0.8.0/index.html apidocs].
+For details, please read the main Yapool package description in the [https://yapool.googlecode.com/svn/branches/yapool/apidocs/0.8/index.html apidocs].
 
 Downloads are available in the [https://code.google.com/p/yapool/source/browse/downloads source downloads] directory (use the "raw file link" at the rigth side for each file).
 
 Or use the following links:
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.0-artifacts.zip 0.8.0 binaries] (includes JavaDoc)
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.0-project.zip 0.8.0 project] (includes all source code).
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.1-artifacts.zip 0.8.1 binaries] (includes Javadoc)
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.1-project.zip 0.8.1 project] (includes all source code).

@@ -108,7 +108,7 @@ public class PoolUsageLogger implements Runnable {
 	protected long lastIdled;
 	protected int lastIdleSize;
 	protected long lastInvalid;
-	protected int lastLeasedSize;
+	protected int leasedSize;
 	protected int lastSize;
 	protected int lastWaiting;
 	
@@ -118,12 +118,14 @@ public class PoolUsageLogger implements Runnable {
 	 */
 	public boolean report() {
 		
-		boolean report = (pool.getCreatedCount() != lastCreated) 
+		leasedSize = pool.getLeasedSize();
+		boolean report = (leasedSize > 0)
+				|| (pool.getCreatedCount() != lastCreated) 
 				|| (pool.getExpiredCount() != lastExpired)
 				|| (pool.getIdledCount() != lastIdled)
 				|| (pool.getIdleSize() != lastIdleSize)
 				|| (pool.getInvalidCount() != lastInvalid)
-				|| (pool.getLeasedSize() != lastLeasedSize)
+				|| (pool.getLeasedSize() != leasedSize)
 				|| (pool.getSize() != lastSize)
 				|| (pool.getWaitingSize() != lastWaiting);
 		return report;
@@ -138,9 +140,8 @@ public class PoolUsageLogger implements Runnable {
 		sb.append(pool.getPoolName()).append(" ");
 		lastSize = pool.getSize();
 		sb.append("size: ").append(lastSize);
-		lastLeasedSize = pool.getLeasedSize();
-		if (lastLeasedSize > 0) {
-			sb.append(", leased: ").append(lastLeasedSize);
+		if (leasedSize > 0) {
+			sb.append(", leased: ").append(leasedSize);
 		}
 		lastIdleSize = pool.getIdleSize();
 		if (lastIdleSize > 0) {

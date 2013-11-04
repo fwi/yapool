@@ -28,10 +28,6 @@ public class SocketUsageLogger implements Runnable {
 	 */
 	public Logger log = LoggerFactory.getLogger(getClass());
 
-	protected long lastAccepted;
-	protected long lastProcessing;
-	protected long lastProcessed;
-	
 	private String reportId = "";
 	private long reportIntervalMs = 10000L;
 	private SocketAcceptor acceptor;
@@ -43,8 +39,23 @@ public class SocketUsageLogger implements Runnable {
 	private volatile boolean stop;
 	private Semaphore sleepLock = new Semaphore(0);
 
+	public SocketUsageLogger() {
+		super();
+	}
+	public SocketUsageLogger(SocketAcceptor acceptor) {
+		super();
+		setSocketAcceptor(acceptor);
+	}
+	
 	public void setSocketAcceptor(SocketAcceptor acceptor) {
 		this.acceptor = acceptor;
+		if (isEmpty(getReportId())) {
+			setReportId(getDefaultReportId());
+		}
+	}
+	
+	protected String getDefaultReportId() {
+		return "server@" + (getSocketAcceptor() == null ? "unknown" : getSocketAcceptor().getOpenPort());
 	}
 	
 	public SocketAcceptor getSocketAcceptor() {
@@ -92,6 +103,9 @@ public class SocketUsageLogger implements Runnable {
 		if (acceptor == null) {
 			log.error("No socket acceptor set, cannot log usage.");
 		} else {
+			if (isEmpty(getReportId())) {
+				setReportId(getDefaultReportId());
+			}
 			acceptor.getExecutor().execute(this);
 		}
 	}
@@ -102,9 +116,14 @@ public class SocketUsageLogger implements Runnable {
 	 */
 	public void start(ScheduledExecutorService scheduler) {
 		
-		runAsTask = true;
-		this.scheduledExecutor = scheduler;
-		scheduleTask();
+		if (acceptor == null) {
+			log.error("No socket acceptor set, cannot log usage.");
+		} else {
+			runAsTask = true;
+			this.scheduledExecutor = scheduler;
+			scheduleTask();
+			debug("socket usage logger started.");
+		}
 	}
 	
 	protected void scheduleTask() {
@@ -117,9 +136,19 @@ public class SocketUsageLogger implements Runnable {
 		if (runAsTask) {
 			if (scheduledTask != null) {
 				scheduledTask.cancel(false);
+				scheduledTask = null;
 			}
+			debug("socket usage logger stopped.");
 		} else {
 			sleepLock.release();
+		}
+	}
+	
+	protected void debug(String msg) {
+		
+		if (log.isDebugEnabled()) {
+			String prefix = (isEmpty(getReportId()) ? "" : getReportId() + " - ");
+			log.debug(prefix + msg);
 		}
 	}
 
@@ -172,12 +201,16 @@ public class SocketUsageLogger implements Runnable {
 			}
 		} finally {
 			log.info(getReport());
-			log.info(reportId + " Socket connections reporter stopping.");
+			debug("Socket connections reporter stopping.");
 			if (orgThreadName != null) {
 				Thread.currentThread().setName(orgThreadName);
 			}
 		}
 	}
+	
+	protected long lastAccepted;
+	protected long lastProcessing;
+	protected long lastProcessed;
 	
 	/**
 	 * Evaluates the "lastCount" values.
@@ -185,9 +218,9 @@ public class SocketUsageLogger implements Runnable {
 	 */
 	public boolean report() {
 		
-		boolean report = (acceptor.getAcceptedCount() != lastAccepted);
-		if (!report) report = (acceptor.getTasksFinished() != lastProcessed);
-		if (!report) report = (acceptor.getOpenTasks() != lastProcessing);
+		boolean report = (acceptor.getAcceptedCount() != lastAccepted)
+				|| (acceptor.getTasksFinished() != lastProcessed)
+				|| (acceptor.getOpenTasks() != lastProcessing);
 		return report;
 	}
 
@@ -196,7 +229,9 @@ public class SocketUsageLogger implements Runnable {
 
 		StringBuilder sb = new StringBuilder(128);
 
-		if (reportId != null && !reportId.isEmpty()) sb.append(reportId).append(" - ");
+		if (reportId != null && !reportId.isEmpty()) {
+			sb.append(reportId).append(" - ");
+		}
 
 		long count = acceptor.getAcceptedCount();
 		sb.append("accepted: ").append(count - lastAccepted).append(", ");
@@ -211,5 +246,14 @@ public class SocketUsageLogger implements Runnable {
 		lastProcessed = count;
 
 		return sb.toString();
+	}
+	
+	/**
+	 * 
+	 * @param s
+	 * @return true if s is null or empty.
+	 */
+	public static boolean isEmpty(String s) {
+		return (s == null || s.isEmpty());
 	}
 }

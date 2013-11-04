@@ -10,9 +10,9 @@ import nl.fw.yapool.sql.MySqlFactory;
 public class MySqlPoolBuilder implements IPoolBuilder {
 
 	/**
-	 * Opens a MySQL database connection pool connecting to {@link #JDBC_URL_TEST_LOCAL}.
+	 * Opens a MySQL database connection pool connecting to {@link MySqlFactory#JDBC_URL_TEST_LOCAL}.
 	 * Does not overwrite any given properties, i.e. if <code>jdbcUrl</code> is
-	 * set to something other then {@link #JDBC_URL_TEST_LOCAL}, that value will be preserved.
+	 * set to something other then {@link MySqlFactory#JDBC_URL_TEST_LOCAL}, that value will be preserved.
 	 * <br>Note that this pool has <code>autoCommit</code> set to false by default.
 	 * <br>Calls {@link #applyStableConnectionProps(Properties)} for additional connection properties.
 	 */

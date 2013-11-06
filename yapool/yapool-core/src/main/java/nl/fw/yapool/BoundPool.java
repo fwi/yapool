@@ -75,7 +75,7 @@ public class BoundPool<T> extends Pool<T> {
 	}
 	
 	/**
-	 * Creates a resource in a synchronized manner, but only if pool is not full.
+	 * Creates a resource (in a synchronized manner if {@link #isSyncCreation()} is true), but only if pool is not full.
 	 * @return null or a new resource 
 	 */
 	@Override 

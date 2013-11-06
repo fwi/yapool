@@ -215,13 +215,16 @@ public class PrunedPool<T> extends BoundPool<T> {
 	protected void ensureMinSize() {
 		
 		try {
-			while (getMinSize() < getSize()) {
+			while (getSize() < getMinSize()) {
 				T t = create();
 				if (t == null) {
 					// Factory cannot create resource, no point in re-trying.
 					break;
 				}
 				addIdle(t);
+				if (log.isTraceEnabled()) {
+					log.trace("Added new resource to pool " + getPoolName() + " to ensure minimum size (" + getMinSize() + "/" + getSize() + ")");
+				}
 			}
 		} catch (Exception e) {
 			log.error("Could not grow pool " + getPoolName() + " to minimum size " + getMinSize() + " (current size is " + getSize() + ")", e);

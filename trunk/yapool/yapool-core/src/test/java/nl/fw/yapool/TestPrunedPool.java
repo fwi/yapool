@@ -57,6 +57,7 @@ public class TestPrunedPool {
 		
 		PoolEventQueue events;
 		Pruned p = TestUtil.createPrunedPool(events = new PoolEventQueue());
+		p.setMinSize(1);
 		StartTraceTest st; 
 		p.getEvents().addPoolListener(st = new StartTraceTest(p));
 		//st.showLog = true;
@@ -88,7 +89,10 @@ public class TestPrunedPool {
 		//System.out.println(events);
 		//log.info(pw.getStats(p).toString());
 		assertEquals(0, p.getLeasedSize());
-		assertEquals(0, p.getIdleSize());
+		
+		// minimum size should be respected
+		assertEquals(1, events.getCount(PoolEvent.CREATED));
+		assertEquals(1, p.getIdleSize());
 		
 		// since they have expired, they should not return to pool but they should be destroyed
 		p.setMaxLeaseTimeMs(1000L);
@@ -96,7 +100,7 @@ public class TestPrunedPool {
 		events.register = true;
 		for (int i = 0; i < p.getMaxSize(); i++) p.release(l[i]);
 		events.register = false;
-		assertEquals(0, p.getIdleSize());
+		assertEquals(1, p.getIdleSize());
 		assertEquals(p.getMaxSize(), events.getCount(PoolEvent.DESTROYING));
 		p.close();
 		//log.info(p.toStatus());

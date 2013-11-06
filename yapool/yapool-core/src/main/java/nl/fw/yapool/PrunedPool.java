@@ -166,8 +166,9 @@ public class PrunedPool<T> extends BoundPool<T> {
 	 */
 	protected void checkIdleTime() {
 		
-		if (getMaxIdleTimeMs() == 0L) return;
-		if (getSize() <= getMinSize()) return;
+		if (getMaxIdleTimeMs() == 0L || getSize() <= getMinSize()) {
+			return;
+		}
 		long now = System.currentTimeMillis();
 		T t = null;
 		boolean done = false;
@@ -228,7 +229,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 			while (getSize() < getMinSize()) {
 				T t = create();
 				if (t == null) {
-					// Factory cannot create resource, no point in re-trying.
+					// Should not happen, but to be safe.
 					break;
 				}
 				addIdle(t);
@@ -237,7 +238,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 				}
 			}
 		} catch (Exception e) {
-			log.error("Could not grow pool " + getPoolName() + " to minimum size " + getMinSize() + " (current size is " + getSize() + ")", e);
+			log.error("Failed to grow pool " + getPoolName() + " to minimum size " + getMinSize() + " (current size is " + getSize() + ")", e);
 		}
 	}
 	

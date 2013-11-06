@@ -141,6 +141,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 		try {
 			checkIdleTime();
 			checkLeaseTime();
+			ensureMinSize();
 		} catch (Exception e) {
 			log.error("Pruning pool " + getPoolName() + " failed.", e);
 		}
@@ -150,7 +151,8 @@ public class PrunedPool<T> extends BoundPool<T> {
 	}
 	
 	/**
-	 * Removes resources from the pool that idled for {@link #getMaxIdleTimeMs()}.
+	 * Removes resources from the pool that idled for {@link #getMaxIdleTimeMs()},
+	 * but only if pool size is larger than minimum pool size. 
 	 */
 	protected void checkIdleTime() {
 		
@@ -162,7 +164,9 @@ public class PrunedPool<T> extends BoundPool<T> {
 		while (!done && (t = idleQueue.peekLast()) != null) {
 			done = true;
 			Long idleStart = idleTimeStart.get(t);
-			if (idleStart != null && now - idleStart > getMaxIdleTimeMs()) {
+			if (idleStart != null 
+					&& now - idleStart > getMaxIdleTimeMs()
+					&& getSize() > getMinSize()) {
 				t = removeIdle(true);
 				if (t != null) {
 					idledCount.incrementAndGet();
@@ -201,6 +205,26 @@ public class PrunedPool<T> extends BoundPool<T> {
 					logExpiredTrace(evicted, user);
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Try to create new idle resources until minimum size is reached.
+	 * Any errors are catched and logged.
+	 */
+	protected void ensureMinSize() {
+		
+		try {
+			while (getMinSize() < getSize()) {
+				T t = create();
+				if (t == null) {
+					// Factory cannot create resource, no point in re-trying.
+					break;
+				}
+				addIdle(t);
+			}
+		} catch (Exception e) {
+			log.error("Could not grow pool " + getPoolName() + " to minimum size " + getMinSize() + " (current size is " + getSize() + ")", e);
 		}
 	}
 	

@@ -159,39 +159,41 @@ public class BoundPool<T> extends Pool<T> {
 		T t = null;
 		try {
 			// See if one is available.
-			if ((t = acquireIdle(0L)) != null) {
-				return t;
-			}
-			// Create may take a long time if something is wrong, register start time if needed.
-			long createStart = 0L;
-			boolean tryCreate = getSize() < getMinSize() || !isFull();
-			if (tryCreate) {
-				createStart = System.currentTimeMillis();
-				// There is room to create one
-				// Do not throw error, will try create again after acquire-period.
-				if ((t = create(true, false)) != null) {
-					return t;
+			t = acquireIdle(0L);
+			if (t == null) {
+				// Check if a resource should be created.
+				if (getSize() < getMinSize() || !isFull()) {
+					// Create may take a long time if something is wrong, register start time.
+					final long createStart = System.currentTimeMillis();
+					// Create without throwing error, will try acquire/create again below.
+					t = create(true, false);
+					if (t == null) {
+						// Could not create resource, wait for one to become available.
+						// Substract the time it took to try to create a resource.
+						final long idleAcquireTime = acquireTimeOutMs - (System.currentTimeMillis() - createStart); 
+						t = acquireIdle(idleAcquireTime);
+						if (t == null && idleAcquireTime > 0L && !isFull()) {
+							// Try to create a resource again - resources might have been evicted while waiting for idle resource.
+							// Last time create is tried, throw an error if it fails.
+							t = create(true, true);
+						}
+						// if t is still null, an error will be thrown, see below.
+					}
+				} else {
+					// Cannot create resource, wait for one to become available.
+					t = acquireIdle(acquireTimeOutMs);
+					if (t == null && !isFull()) {
+						// Try to create a resource - resources might have been evicted while waiting for idle resource.
+						// Throw an error if create fails.
+						t = create(true, true);
+					}
 				}
-			}
-			// Trying to create a resource can take a long time if something is wrong.
-			long idleAcquireTime = (tryCreate ? acquireTimeOutMs - (System.currentTimeMillis() - createStart) : acquireTimeOutMs);
-			// Wait longer for an idle resource.
-			if ((t = acquireIdle(idleAcquireTime)) != null) {
-				return t;
-			}
-			// If first create took a long time, do not try create again.
-			if (idleAcquireTime < 0L || isFull()) {
-				throwAcquireTimeOut(acquireTimeOutMs);
-			} else {
-				// Try to create a resource again - resources might have been evicted while waiting for idle resource.
-				// Do throw error, this is last time we try to create a resource.
-				if ((t = create(true, true)) == null) {
-					// Waited for resource to become available
-					// and tried to create a resource, but still no resource available 
+				// Tried everything to acquire and/or create a resource within acquire-time.
+				if (t == null) {
 					throwAcquireTimeOut(acquireTimeOutMs);
 				}
-				// else a non-null t is returned at end of this method.
 			}
+			// at this point, t is not null or an error was thrown
 		} finally {
 			// Acquired event with t==null indicates acquired failed.
 			fireEvent(PoolEvent.ACQUIRED, t);

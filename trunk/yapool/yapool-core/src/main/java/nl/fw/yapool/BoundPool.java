@@ -158,38 +158,40 @@ public class BoundPool<T> extends Pool<T> {
 		fireEvent(PoolEvent.ACQUIRING);
 		T t = null;
 		try {
-			if (getSize() < getMinSize()) {
-				// Must create one to reach minimum size.
-				// Do not throw error, will try create again after acquire-period.
-				if ((t = create(true, false)) != null) {
-					return t;
-				}
-			}
 			// See if one is available.
 			if ((t = acquireIdle(0L)) != null) {
 				return t;
 			}
-			if (!isFull()) {
+			// Create may take a long time if something is wrong, register start time if needed.
+			long createStart = 0L;
+			boolean tryCreate = getSize() < getMinSize() || !isFull();
+			if (tryCreate) {
+				createStart = System.currentTimeMillis();
 				// There is room to create one
 				// Do not throw error, will try create again after acquire-period.
 				if ((t = create(true, false)) != null) {
 					return t;
 				}
 			}
+			// Trying to create a resource can take a long time if something is wrong.
+			long idleAcquireTime = (tryCreate ? acquireTimeOutMs - (System.currentTimeMillis() - createStart) : acquireTimeOutMs);
 			// Wait longer for an idle resource.
-			if ((t = acquireIdle(acquireTimeOutMs)) != null) {
+			if ((t = acquireIdle(idleAcquireTime)) != null) {
 				return t;
 			}
-			// Try to create a resource again - resources might have been evicted.
-			if (!isFull()) {
+			// If first create took a long time, do not try create again.
+			if (idleAcquireTime < 0L || isFull()) {
+				throwAcquireTimeOut(acquireTimeOutMs);
+			} else {
+				// Try to create a resource again - resources might have been evicted while waiting for idle resource.
 				// Do throw error, this is last time we try to create a resource.
-				if ((t = create(true, true)) != null) {
-					return t;
+				if ((t = create(true, true)) == null) {
+					// Waited for resource to become available
+					// and tried to create a resource, but still no resource available 
+					throwAcquireTimeOut(acquireTimeOutMs);
 				}
+				// else a non-null t is returned at end of this method.
 			}
-			// Waited for resource to become available
-			// and tried to create a resource, but still no resource available 
-			throwAcquireTimeOut(acquireTimeOutMs);
 		} finally {
 			// Acquired event with t==null indicates acquired failed.
 			fireEvent(PoolEvent.ACQUIRED, t);

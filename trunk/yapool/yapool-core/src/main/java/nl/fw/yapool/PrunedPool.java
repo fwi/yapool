@@ -98,6 +98,16 @@ public class PrunedPool<T> extends BoundPool<T> {
 		}
 		return valid;
 	}
+	
+	@Override
+	protected void addIdle(T t) {
+	
+		if (t != null) {
+			idleTimeStart.put(t, System.currentTimeMillis());
+			super.addIdle(t);
+		}
+	}
+
 
 	@Override
 	public T release(T t) {

@@ -107,6 +107,25 @@ public class TestPrunedPool {
 	}
 
 	@Test
+	public void idledAfterOpen() {
+		
+		PoolEventQueue events;
+		Pruned p  = TestUtil.createPrunedPool(events = new PoolEventQueue());
+		p.setMinSize(2);
+		p.setMaxSize(4);
+		p.setPruneIntervalMs(5L);
+		p.setMaxIdleTimeMs(5L);
+		p.open(p.getMaxSize());
+		events.register = true;
+		//events.logEvent = true;
+		TestUtil.runPruner(p);
+		TestUtil.sleep(20L);
+		// 2 resources should have idled, 2 should remain
+		assertEquals(2, p.getSize());
+		p.close();
+	}
+
+	@Test
 	public void idled() {
 		
 		PoolEventQueue events;
@@ -114,6 +133,7 @@ public class TestPrunedPool {
 		p.setPruneIntervalMs(10L);
 		p.setMaxIdleTimeMs(80L);
 		p.open(0);
+		// acquire all, then release half.
 		Long[] l = new Long[p.getMaxSize()];
 		for (int i = 0; i < p.getMaxSize(); i++) l[i] = p.acquire();
 		int released = p.getMaxSize() / 2;

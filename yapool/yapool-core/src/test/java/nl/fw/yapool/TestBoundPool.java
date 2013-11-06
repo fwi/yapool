@@ -76,20 +76,6 @@ public class TestBoundPool {
 	}
 	
 	@Test
-	public void minAvailable() {
-		
-		Bound p = TestUtil.createPool(null);
-		p.setMinSize(p.getMaxSize());
-		p.open();
-		assertEquals(p.getMinSize(), p.getSize());
-		assertNotNull(p.removeIdle(true));
-		Long l = p.acquire();
-		assertEquals(p.getMinSize(), p.getSize());
-		p.release(l);
-		p.close();
-	}
-	
-	@Test
 	public void useMax() {
 		
 		Bound p = TestUtil.createPool(null);

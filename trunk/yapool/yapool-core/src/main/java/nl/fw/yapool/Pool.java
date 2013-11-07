@@ -97,6 +97,9 @@ public class Pool<T> implements IPool<T> {
 		return t;
 	}
 	
+	/**
+	 * Adds a resource to the head of the idle queue.
+	 */
 	protected void addIdle(T t) {
 		
 		idleQueue.addFirst(t);

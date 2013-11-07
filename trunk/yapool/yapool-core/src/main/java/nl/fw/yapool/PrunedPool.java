@@ -149,10 +149,9 @@ public class PrunedPool<T> extends BoundPool<T> {
 			log.trace("Pruning pool " + getPoolName() + " (max. idle: " + getMaxIdleTimeMs() + ", max. lease: " + getMaxLeaseTimeMs() + ")");
 		}
 		try {
-			int resourcesRemoved = checkIdleTime();
-			resourcesRemoved += checkLeaseTime();
-			if (resourcesRemoved > 0) {
-				// If the factory cannot create resources (database unavailable), no resources are removed or idled eventually.
+			checkIdleTime();
+			if (checkLeaseTime() > 0) {
+				// If the factory cannot create resources (e.g. database unavailable), no resources are evicted (eventually).
 				// In this case, do not ensure minimum size because that will just show a lot of error messages.
 				ensureMinSize();
 			}
@@ -167,7 +166,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	/**
 	 * Removes resources from the pool that idled for {@link #getMaxIdleTimeMs()},
 	 * but only if pool size is larger than minimum pool size.
-	 * @return amount of an idle connections removed
+	 * @return amount of an idle resources removed
 	 */
 	protected int checkIdleTime() {
 		
@@ -199,7 +198,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	 * Removes resources from the pool that are leased for {@link #getMaxLeaseTimeMs()}.
 	 * A leaser may be interrupted (see {@link #isInterruptLeaser()})
 	 * and a stack trace may be logged (see {@link PrunedPool#isLogLeaseExpiredTrace()}).
-	 * @return amount of evicted connections
+	 * @return amount of evicted resources
 	 */
 	protected int checkLeaseTime() {
 		

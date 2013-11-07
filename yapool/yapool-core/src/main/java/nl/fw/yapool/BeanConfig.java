@@ -47,6 +47,11 @@ import org.slf4j.LoggerFactory;
 public class BeanConfig {
 
 	protected static Logger log = LoggerFactory.getLogger(BeanConfig.class);
+	
+	/** Properties with uppercase-names ending with this value (default "PASSWORD") are always shown with value {@link #PASSWORD_VALUE} (default "secret"). */ 
+	public static String PASSWORD_KEY = "PASSWORD";
+	/** The replacement value for {@link #PASSWORD_KEY} values, default "secret". */
+	public static String PASSWORD_VALUE = "secret";
 
 	/**
 	 * Calls set-methods in the bean that have names that correspond to the property-keys.
@@ -62,11 +67,12 @@ public class BeanConfig {
 	 * <br>See also {@link #filterPrefix(Map, String)} to prepare the props.   
 	 * @param bean The bean to apply the properties to.
 	 * @param props The properties to apply to the bean.
+	 * @return A description of all values that were set.
 	 */
 	@SuppressWarnings("unchecked")
-	public static void configure(Object bean, Map<?,?> props) {
+	public static String configure(Object bean, Map<?,?> props) {
 
-		if (bean == null) return;
+		if (bean == null) return "";
 
 		Map<String, Method> setMethods = new HashMap<String, Method>();
 		List<Method> mapMethods = new LinkedList<Method>();
@@ -124,9 +130,7 @@ public class BeanConfig {
 				setMethodValue(bean, method, confProps, sb);
 			}
 		}
-		if (log.isDebugEnabled()) {
-			log.debug(sb.toString());
-		}
+		return sb.toString();
 	}
 	
 	/**
@@ -151,9 +155,9 @@ public class BeanConfig {
 	/**
 	 * Opposite function of {@link #configure(Object, Map)}: extracts bean values and puts them in the properties map.
 	 */
-	public static void extract(Object bean, Map<Object ,Object> props) {
+	public static String extract(Object bean, Map<Object, Object> props) {
 	
-		if (bean == null) return;
+		if (bean == null) return "";
 
 		Map<String, Method> getMethods = new HashMap<String, Method>();
 		List<Method> mapMethods = new LinkedList<Method>();
@@ -193,7 +197,8 @@ public class BeanConfig {
 		for (String key : getMethods.keySet()) {
 			Object v = getMethodValue(bean, getMethods.get(key), sb);
 			if (v != null) {
-				props.put(firstCharLowerCase(key), v.toString());
+				boolean pwd = (key.toUpperCase().endsWith(PASSWORD_KEY));
+				props.put(firstCharLowerCase(key), (pwd ? PASSWORD_VALUE : v.toString()));
 			}
 		}
 		for (Method mapGet : mapMethods) {
@@ -215,12 +220,12 @@ public class BeanConfig {
 				if (mv == null) {
 					continue;
 				}
-				props.put(mapKey + mk.toString(), mv.toString());
+				String mkey = mapKey + mk.toString();
+				boolean pwd = (mkey.toUpperCase().endsWith(PASSWORD_KEY));
+				props.put(mkey, (pwd ? PASSWORD_VALUE : mv.toString()));
 			}
 		}
-		if (log.isDebugEnabled()) {
-			log.debug(sb.toString());
-		}
+		return sb.toString();
 	}
 	
 	protected static String firstCharLowerCase(String v) {
@@ -330,7 +335,22 @@ public class BeanConfig {
 				sb.append("\nUnknown parameter type ").append(setType.getSimpleName()).append(" for method ").append(m.getName());
 			}
 			if (!unknown) {
-				sb.append('\n').append(m.getName()).append(" to ").append(svalue);
+				sb.append('\n').append(m.getName()).append(" to ");
+				if (m.getName().toUpperCase().endsWith(PASSWORD_KEY)) {
+					sb.append(PASSWORD_VALUE);
+				} else if (Map.class.isAssignableFrom(setType)) {
+					@SuppressWarnings("unchecked")
+					Map<Object, Object> mvalue = (Map<Object, Object>) value;
+					for (Object k : mvalue.keySet()) {
+						if (k.toString().toUpperCase().endsWith(PASSWORD_KEY)) {
+							svalue = svalue.replace(k.toString() + "=" + mvalue.get(k), k.toString() + "=" + PASSWORD_VALUE);
+						}
+					}
+					sb.append(svalue);
+				} else {
+					sb.append(svalue);
+				}
+
 			}
 		} catch (Exception e) {
 			sb.append("\nFailed to set value for ").append(m.getName()).append(": ").append(e.toString());
@@ -369,7 +389,22 @@ public class BeanConfig {
 				sb.append("\nUnknown value type ").append(getType.getSimpleName()).append(" for method ").append(m.getName());
 			}
 			if (known) {
-				sb.append('\n').append(m.getName()).append(" = ").append(value);
+				sb.append('\n').append(m.getName()).append(" = ");
+				if (m.getName().toUpperCase().endsWith(PASSWORD_KEY)) {
+					sb.append(PASSWORD_VALUE);
+				} else if (Map.class.isAssignableFrom(getType)) {
+					String s = value.toString();
+					@SuppressWarnings("unchecked")
+					Map<Object, Object> mvalue = (Map<Object, Object>) value;
+					for (Object k : mvalue.keySet()) {
+						if (k.toString().toUpperCase().endsWith(PASSWORD_KEY)) {
+							s = s.replace(k.toString() + "=" + mvalue.get(k), k.toString() + "=" + PASSWORD_VALUE);
+						}
+					}
+					sb.append(s);
+				} else {
+					sb.append(value);
+				}
 			} else {
 				value = null;
 			}

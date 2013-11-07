@@ -198,6 +198,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	 * Removes resources from the pool that are leased for {@link #getMaxLeaseTimeMs()}.
 	 * A leaser may be interrupted (see {@link #isInterruptLeaser()})
 	 * and a stack trace may be logged (see {@link PrunedPool#isLogLeaseExpiredTrace()}).
+	 * <br>The removed resource is destroyed if {@link #isDestroyOnExpiredLease()} is true.
 	 * @return amount of evicted resources
 	 */
 	protected int checkLeaseTime() {
@@ -365,6 +366,9 @@ public class PrunedPool<T> extends BoundPool<T> {
 		return interruptLeaser;
 	}
 
+	/**
+	 * If set to true, the thread that leased a resource for too long is interrupted.
+	 */
 	public void setInterruptLeaser(boolean interruptLeaser) {
 		this.interruptLeaser = interruptLeaser;
 		if (interruptLeaser) {
@@ -376,6 +380,13 @@ public class PrunedPool<T> extends BoundPool<T> {
 		return destroyOnExpiredLease;
 	}
 
+	/**
+	 * If set to true, a resource that is removed from the pool after it was leased for too long,
+	 * will be destroyed by the resource-factory.
+	 * <br>Default set to false because this can also destroy a a resource that is still in use
+	 * (an expired lease indicates something is wrong, but the resource could still be in use).
+	 * <br>Set to true if all resources really need to be destroyed/closed by the factory.
+	 */
 	public void setDestroyOnExpiredLease(boolean destroyOnExpiredLease) {
 		this.destroyOnExpiredLease = destroyOnExpiredLease;
 	}

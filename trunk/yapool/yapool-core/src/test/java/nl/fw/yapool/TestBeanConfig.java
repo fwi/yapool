@@ -128,5 +128,48 @@ public class TestBeanConfig {
 		assertEquals(4, p.keySet().size());
 		assertEquals("10", p.getProperty("db.bean.maxsize.test"));
 	}
+	
+	@Test
+	public void filterPwd() {
+		
+		SqlFactory factory = new SqlFactoryPwd();
+		Properties props = new Properties();
+		props.setProperty("jdbcUrl", "jdbc:test:url");
+		props.setProperty("mypassword", "MyPwd");
+		props.setProperty("connection.user", "customPropValue");
+		props.setProperty("connection.password", "customPwdPropValue");
+		props.setProperty("connection.AnotherProp", "AnotherPropValue");
+		props.setProperty("connection.driver.special.class", "driver.special.class.value");
+		String info = BeanConfig.configure(factory, props);
+		log.trace(info);
+		assertTrue(info.contains("user=customPropValue"));
+		assertFalse(info.contains("customPwdPropValue"));
+		assertTrue(info.contains("password=secret"));
+		assertFalse(info.contains("MyPwd"));
+		assertTrue(info.contains("setMyPassword to secret"));
+		assertEquals("customPwdPropValue", factory.getConnectionProps().getProperty("password"));
+
+		props.clear();
+		info = BeanConfig.extract(factory, props);
+		log.trace(info);
+		assertTrue(info.contains("user=customPropValue"));
+		assertFalse(info.contains("customPwdPropValue"));
+		assertTrue(info.contains("password=secret"));
+		assertFalse(info.contains("MyPwd"));
+		assertTrue(info.contains("getMyPassword = secret"));
+		assertEquals(BeanConfig.PASSWORD_VALUE, props.get("connection.password"));
+		assertEquals(BeanConfig.PASSWORD_VALUE, props.get("myPassword"));
+	}
+	
+	final static class SqlFactoryPwd extends SqlFactory {
+		
+		private String pwd;
+		public void setMyPassword(String pwd) {
+			this.pwd = pwd;
+		}
+		public String getMyPassword() {
+			return pwd;
+		}
+	}
 
 }

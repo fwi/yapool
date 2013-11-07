@@ -22,6 +22,7 @@ public class WaitStart implements Runnable {
 	public void run() {
 		
 		latch.countDown();
+		TestUtil.await(latch);
 		toRun.run();
 	}
 

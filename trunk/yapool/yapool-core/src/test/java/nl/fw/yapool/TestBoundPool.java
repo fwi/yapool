@@ -129,7 +129,7 @@ public class TestBoundPool {
 		p.setMinSize(1);
 		p.setMaxSize(1);
 		p.setFair(true);
-		p.setMaxAcquireTimeMs(10L);
+		p.setMaxAcquireTimeMs(50L);
 		p.open();
 		PoolRunnerStopper stopper = new PoolRunnerStopper();
 		Thread[] t = new Thread[3];

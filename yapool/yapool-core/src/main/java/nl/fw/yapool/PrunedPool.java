@@ -149,9 +149,13 @@ public class PrunedPool<T> extends BoundPool<T> {
 			log.trace("Pruning pool " + getPoolName() + " (max. idle: " + getMaxIdleTimeMs() + ", max. lease: " + getMaxLeaseTimeMs() + ")");
 		}
 		try {
-			checkIdleTime();
-			checkLeaseTime();
-			ensureMinSize();
+			int resourcesRemoved = checkIdleTime();
+			resourcesRemoved += checkLeaseTime();
+			if (resourcesRemoved > 0) {
+				// If the factory cannot create resources (database unavailable), no resources are removed or idled eventually.
+				// In this case, do not ensure minimum size because that will just show a lot of error messages.
+				ensureMinSize();
+			}
 		} catch (Exception e) {
 			log.error("Pruning pool " + getPoolName() + " failed.", e);
 		}
@@ -162,16 +166,18 @@ public class PrunedPool<T> extends BoundPool<T> {
 	
 	/**
 	 * Removes resources from the pool that idled for {@link #getMaxIdleTimeMs()},
-	 * but only if pool size is larger than minimum pool size. 
+	 * but only if pool size is larger than minimum pool size.
+	 * @return amount of an idle connections removed
 	 */
-	protected void checkIdleTime() {
+	protected int checkIdleTime() {
 		
 		if (getMaxIdleTimeMs() == 0L || getSize() <= getMinSize()) {
-			return;
+			return 0;
 		}
 		long now = System.currentTimeMillis();
 		T t = null;
 		boolean done = false;
+		int removedCount = 0;
 		while (!done && (t = idleQueue.peekLast()) != null) {
 			done = true;
 			Long idleStart = idleTimeStart.get(t);
@@ -180,21 +186,25 @@ public class PrunedPool<T> extends BoundPool<T> {
 					&& getSize() > getMinSize()) {
 				t = removeIdle(true);
 				if (t != null) {
+					removedCount++;
 					idledCount.incrementAndGet();
 					done = false;
 				}
 			}
 		}
+		return removedCount;
 	}
 
 	/**
 	 * Removes resources from the pool that are leased for {@link #getMaxLeaseTimeMs()}.
 	 * A leaser may be interrupted (see {@link #isInterruptLeaser()})
 	 * and a stack trace may be logged (see {@link PrunedPool#isLogLeaseExpiredTrace()}).
+	 * @return amount of evicted connections
 	 */
-	protected void checkLeaseTime() {
+	protected int checkLeaseTime() {
 		
 		long now = System.currentTimeMillis();
+		int evictedCount = 0;
 		for (T t : leaseTimeEnd.keySet()) {
 			Long leaseEnd = leaseTimeEnd.get(t);
 			if (leaseEnd == null || leaseEnd == 0L || now <= leaseEnd) {
@@ -210,6 +220,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 			}
 			T evicted = removeLeased(t, destroyOnExpiredLease, true);
 			if (evicted != null) {
+				evictedCount++;
 				// if leaser was interrupted, stack trace logging was already done.
 				expiredCount.incrementAndGet();
 				if (!isInterruptLeaser()) {
@@ -217,6 +228,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 				}
 			}
 		}
+		return evictedCount;
 	}
 	
 	/**

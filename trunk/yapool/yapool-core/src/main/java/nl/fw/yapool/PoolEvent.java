@@ -59,15 +59,13 @@ public class PoolEvent extends EventObject {
 	/**
 	 * The resource to which the action applies.
 	 * Can be null if an {@link #ACQUIRED} action failed.
-	 * @return
 	 */
 	public Object getResource() {
 		return resource;
 	}
 	
 	/**
-	 * One of the static pool-event strings in this class ({@link #OPENED}, {@link #ACQUIRING}, {@link DESTROYING}, etc.)
-	 * @return
+	 * One of the static pool-event strings in this class ({@link #OPENED}, {@link #ACQUIRING}, {@link #DESTROYING}, etc.)
 	 */
 	public String getAction() {
 		return action;
@@ -76,7 +74,6 @@ public class PoolEvent extends EventObject {
 	/**
 	 * If time-stamp was not set during construction,
 	 * this method will return the moment this method was first called. 
-	 * @return
 	 */
 	public long getTimeStamp() {
 

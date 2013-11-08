@@ -129,7 +129,7 @@ public class TestBoundPool {
 		p.setMinSize(1);
 		p.setMaxSize(1);
 		p.setFair(true);
-		p.setMaxAcquireTimeMs(50L);
+		p.setMaxAcquireTimeMs(100L);
 		p.open();
 		PoolRunnerStopper stopper = new PoolRunnerStopper();
 		Thread[] t = new Thread[3];
@@ -138,7 +138,7 @@ public class TestBoundPool {
 			t[i] = TestUtil.start(new PoolRunner<Long>(p, stopper), latch);
 		}
 		TestUtil.await(latch);
-		TestUtil.sleep(500L);
+		TestUtil.sleep(200L);
 		stopper.setStop(true);
 		assertEquals(1, p.getFactory().createCount.get());
 		log.debug("Amount of events: " + events.queue.size());

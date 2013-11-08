@@ -315,6 +315,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	}
 
 	/**
+	 * A resource that has been idle for too long, is removed from the pool.
 	 * @param maxIdleTimeMs if 0, idle time never expires.
 	 */
 	public void setMaxIdleTimeMs(long maxIdleTimeMs) {
@@ -328,6 +329,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	}
 
 	/**
+	 * A resource that has been leased for too long, is removed from the pool.
 	 * @param maxLeaseTimeMs if 0, lease time never expires.
 	 */
 	public void setMaxLeaseTimeMs(long maxLeaseTimeMs) {
@@ -385,7 +387,10 @@ public class PrunedPool<T> extends BoundPool<T> {
 	 * will be destroyed by the resource-factory.
 	 * <br>Default set to false because this can also destroy a a resource that is still in use
 	 * (an expired lease indicates something is wrong, but the resource could still be in use).
-	 * <br>Set to true if all resources really need to be destroyed/closed by the factory.
+	 * And also because expired resources that are eventually released to the pool,
+	 * are always closed by the pool factory. 
+	 * <br>Set to true if all resources really need to be destroyed/closed by the factory
+	 * in a timely manner, and expired leases are frequent.
 	 */
 	public void setDestroyOnExpiredLease(boolean destroyOnExpiredLease) {
 		this.destroyOnExpiredLease = destroyOnExpiredLease;

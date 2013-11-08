@@ -65,23 +65,16 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	 * Closes the PreparedStatement / NamedParameterStatement and catches any errors.
 	 * @param sqlId the ID associated with the statement.
 	 * @param o the statement
-	 * @return true if statement was closed, false otherwise.
 	 */
-	protected boolean closeQuery(String sqlId, Object o) {
+	protected void closeQuery(String sqlId, Object o) {
 		
-		boolean closed = false;
-		try {
-			if (o instanceof PreparedStatement) {
-				((PreparedStatement)o).close();
-				closed = true;
-			} else if (o instanceof NamedParameterStatement) {
-				((NamedParameterStatement)o).close();
-				closed = true;
-			}
-		} catch (Exception e) {
-			log.error("Could not close statement for " + sqlId, e);
+		if (o instanceof PreparedStatement) {
+			DbConn.close(((PreparedStatement)o));
+		} else if (o instanceof NamedParameterStatement) {
+			DbConn.close(((NamedParameterStatement)o));
+		} else {
+			DbConn.closeLogger.warn("Cannot close unknown type of statement " + o);
 		}
-		return closed;
 	}
 	
 	/**

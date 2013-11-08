@@ -243,6 +243,54 @@ public class DbConn {
 		if (nps != null) { if (qc == null) close(nps); nps = null; }
 	}
 	
+	/**
+	 * Rolls back the transaction if a connection is open and calls {@link #close()}.
+	 */
+	public void rollbackAndClose() {
+		rollbackAndClose(null);
+	}
+	
+	/**
+	 * Rolls back the transaction if a connection is open and calls {@link #close()}.
+	 * @param t if not null, this method will always throw a runtime exception
+	 * after rollback and close.
+	 */
+	public void rollbackAndClose(Throwable t) {
+		
+		if (conn == null) {
+			closeLogger.debug("Nothing to rollback, no connection is open.");
+		} else {
+			try {
+				conn.rollback();
+			} catch (Exception re) {
+				closeLogger.warn("Failed to rollback transaction: " + re);
+			}
+		}
+		close();
+		rethrowRuntime(t);
+	}
+	
+	/**
+	 * Throws a runtime-exception if given exception is not null.
+	 * @param t if an instance of a runtime-exception, throws the runtime-exception, 
+	 * else throws a runtime-exception with information copied from checked exception.
+	 */
+	public static void rethrowRuntime(Throwable t) {
+		
+		if (t == null) {
+			return;
+		}
+		if (t instanceof Error) {
+			throw ((Error)t);
+		}
+		if (t instanceof RuntimeException) {
+			throw ((RuntimeException)t);
+		}
+		RuntimeException re = new RuntimeException(t.toString(), t.getCause());
+		re.setStackTrace(t.getStackTrace());
+		throw re;
+	}
+
 	/**   
 	 * Calls {@link #closeQuery()} and, if there is a pool, releases the database connection 
 	 * or closes the database connection.  

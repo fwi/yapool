@@ -24,7 +24,7 @@ public interface IQueryCache extends IPoolListener {
 	 */
 	PreparedStatement getQuery(Connection c, String queryName) throws SQLException;
 	/**
-	 * Creates a named prepared statement for the connection or re-uses one from cache.
+	 * Creates a named parameter statement for the connection or re-uses one from cache.
 	 */
 	NamedParameterStatement getNamedQuery(Connection c, String queryName) throws SQLException;
 	

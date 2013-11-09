@@ -63,17 +63,17 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	
 	/**
 	 * Closes the PreparedStatement / NamedParameterStatement and catches any errors.
-	 * @param sqlId the ID associated with the statement.
+	 * @param queryName the name/ID associated with the statement.
 	 * @param o the statement
 	 */
-	protected void closeQuery(String sqlId, Object o) {
+	protected void closeQuery(String queryName, Object o) {
 		
 		if (o instanceof PreparedStatement) {
 			DbConn.close(((PreparedStatement)o));
 		} else if (o instanceof NamedParameterStatement) {
 			DbConn.close(((NamedParameterStatement)o));
 		} else {
-			DbConn.closeLogger.warn("Cannot close unknown type of statement " + o);
+			DbConn.closeLogger.warn("Cannot close unknown type of statement named " + queryName + ", statement: " + o);
 		}
 	}
 	
@@ -95,51 +95,40 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	}
 
 	@Override
-	public PreparedStatement getQuery(Connection c, String sqlId) throws SQLException {
+	public PreparedStatement getQuery(Connection c, String queryName) throws SQLException {
 		
-		Map<String, Object> cc = getConnectionCache(c);
-		Object o = cc.get(sqlId);
-		PreparedStatement ps = null;
-		if (o == null) {
-			if (qcacheStats != null) {
-				qcacheStats.addMiss(sqlId);
-			}
-			ps = qb.createQuery(c, sqlId);
-			if (ps == null) {
-				throw new RuntimeException("Could not create a prepared statement for SQL ID " + sqlId);
-			}
-			cc.put(sqlId, ps);
-		} else {
-			if (qcacheStats != null) {
-				qcacheStats.addHit(sqlId);
-			}
-			ps = (PreparedStatement)o;
-		}
-		return ps;
+		return (PreparedStatement) getQuery(c, queryName, false);
 	}
 
 	@Override
-	public NamedParameterStatement getNamedQuery(Connection c, String sqlId) throws SQLException {
+	public NamedParameterStatement getNamedQuery(Connection c, String queryName) throws SQLException {
 
+		return (NamedParameterStatement) getQuery(c, queryName, true);
+	}
+
+	public Object getQuery(Connection c, String queryName, boolean named) throws SQLException {
+		
 		Map<String, Object> cc = getConnectionCache(c);
-		Object o = cc.get(sqlId);
-		NamedParameterStatement nps = null;
+		Object o = cc.get(queryName);
 		if (o == null) {
 			if (qcacheStats != null) {
-				qcacheStats.addMiss(sqlId);
+				qcacheStats.addMiss(queryName);
 			}
-			nps = qb.createNamedQuery(c, sqlId);
-			if (nps == null) {
-				throw new RuntimeException("Could not create a named prepared statement for SQL ID " + sqlId);
+			if (named) {
+				o = qb.createNamedQuery(c, queryName);
+			} else {
+				o = qb.createQuery(c, queryName);
 			}
-			cc.put(sqlId, nps);
+			if (o == null) {
+				throw new RuntimeException("Could not create a prepared statement for query name " + queryName);
+			}
+			cc.put(queryName, o);
 		} else {
 			if (qcacheStats != null) {
-				qcacheStats.addHit(sqlId);
+				qcacheStats.addHit(queryName);
 			}
-			nps = (NamedParameterStatement)o;
 		}
-		return nps;
+		return o;
 	}
 
 	/**

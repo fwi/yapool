@@ -26,63 +26,65 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 
 	private static final Logger log = LoggerFactory.getLogger(SimpleQueryBuilder.class);
 
-	/** Map containing sqlIDs and their associated queries. */
-	protected Map<String, String> queries = new HashMap<String, String>();
+	/** Map containing query-names/IDs and their associated queries. */
+	protected Map<String, String> queriesByName = new HashMap<String, String>();
 
-	/** Set containing sqlID's of prepared statements that generate keys. */
+	/** Set containing query names of prepared statements that generate keys. */
 	protected Set<String> genKeyPreparedStatement = new HashSet<String>();
-	/** Set containing sqlID's of named prepared statements that generate keys. */
-	protected Set<String> genKeyNamedPreparedStatement = new HashSet<String>();
+	/** Set containing query names of named parameter statements that generate keys. */
+	protected Set<String> genKeyNamedParameterStatement = new HashSet<String>();
 	
 	/**
-	 * Looks up the query associated with the sqlID.
-	 * If there is no query associated with the sqlID, the sqlID is returned.
+	 * Looks up the query associated with the query name.
+	 * If there is no query associated with the query name, the query name is returned.
+	 * The latter allows the use of (rarely used) queries without a name,
+	 * where the name is the query. 
 	 */
-	public String getQuery(String sqlId) {
+	public String getQueryByName(String queryName) {
 		
-		String q = queries.get(sqlId);
-		return (q == null ? sqlId : q);
+		String q = queriesByName.get(queryName);
+		return (q == null ? queryName : q);
 	}
 
-	/** Map containing sqlIDs and their associated queries. */
+	/** Map containing query names and their associated queries. */
 	public Map<String, String> getQueryMap() {
-		return queries;
+		return queriesByName;
 	}
 	
 	/**
 	 * Determines if a query returns generated keys.
-	 * Uses {@link #genKeyPreparedStatement} and {@link #genKeyNamedPreparedStatement}. 
-	 * @param sqlId The query (ID).
-	 * @param named True for a named prepared statement, false for a prepared statement.
+	 * Uses {@link #genKeyPreparedStatement} and {@link #genKeyNamedParameterStatement}. 
+	 * @param queryName The query name/ID.
+	 * @param named True for a named parameter statement, false for a prepared statement.
 	 * @return True if the statement should return generated keys.
 	 */
-	public boolean hasGeneratedKeys(String sqlId, boolean named) {
-		return (named ? genKeyNamedPreparedStatement.contains(sqlId) :
-			genKeyPreparedStatement.contains(sqlId));
+	public boolean hasGeneratedKeys(String queryName, boolean named) {
+		return (named ? genKeyNamedParameterStatement.contains(queryName) :
+			genKeyPreparedStatement.contains(queryName));
 	}
 	
 	/**
 	 * Creates a prepared statement for the connection.
-	 * @param sqlId Used as the sql-query.
+	 * @param queryName Used as the sql-query.
 	 */
 	@Override
-	public PreparedStatement createQuery(Connection c, String sqlId)  throws SQLException {
+	public PreparedStatement createQuery(Connection c, String queryName)  throws SQLException {
 		
-		String q = getQuery(sqlId);
-		return (hasGeneratedKeys(sqlId, false) ? 
+		String q = getQueryByName(queryName);
+		return (hasGeneratedKeys(queryName, false) ? 
 				c.prepareStatement(q, Statement.RETURN_GENERATED_KEYS) : 
 					c.prepareStatement(q));
 	}
 
 	/**
 	 * Creates a named prepared statement for the connection.
-	 * @param sqlId Used as the named sql-query.
+	 * @param queryName Used as the named sql-query.
 	 */
 	@Override
-	public NamedParameterStatement createNamedQuery(Connection c, String sqlId)  throws SQLException {
+	public NamedParameterStatement createNamedQuery(Connection c, String queryName)  throws SQLException {
 		
-		String q = getQuery(sqlId);
-		return (hasGeneratedKeys(sqlId, true) ? 
+		String q = getQueryByName(queryName);
+		return (hasGeneratedKeys(queryName, true) ? 
 				new NamedParameterStatement(c, q, Statement.RETURN_GENERATED_KEYS) : 
 					new NamedParameterStatement(c, q));
 	}
@@ -104,7 +106,7 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 	/**
 	 * Loads queries form a sql-file/inputstream.
 	 * Queries must be formatted using the {@link #QUERY_NAME_MARKER} in the following manner:
-	 * <pre>{@literal 
+<pre>{@literal 
 -- Just a comment
 // Also a comment
 -- Empty start tag, query will get query-count as ID (in this case "1").
@@ -112,7 +114,7 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 select something from somehwere
 -- End query tag.
 --[/]
--- Named query, ID will be INSERT_ITEM
+-- Query with name INSERT_ITEM
 --[INSERT_ITEM]
 insert into items (item_key, item) values (@itemKey, @item)
 -- Name in end tag must match start-tag.
@@ -122,9 +124,9 @@ select a, b,c
 from x, y, z
 where this=that and other=stuff
 --[/BIG_QUERY]
-	 * }</pre>
+}</pre>
 	 * All text between begin and end tag is not formatted in any way and taken literally as the query,
-	 * but a line is skipped if it is empty, starts with {@code --} (but not {@code --[} which is the tag-marker)
+	 * but a line is skipped if it is empty, starts with {@code --} (but not "{@code --[}" which is the tag-marker)
 	 * or starts with {@code //}.
 	 * @param in The characters to parse (stream is NOT closed by this method).
 	 * @param qmap The map that will contain the query names/IDs and queries.

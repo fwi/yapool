@@ -18,7 +18,7 @@ public interface IQueryBuilder {
 	 */
 	PreparedStatement createQuery(Connection c, String queryName) throws SQLException;
 	/**
-	 * Creates a named prepared statement for the connection.
+	 * Creates a named parameter statement for the connection.
 	 */
 	NamedParameterStatement createNamedQuery(Connection c, String queryName)  throws SQLException;
 }

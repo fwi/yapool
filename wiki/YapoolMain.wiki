@@ -2,10 +2,16 @@
 
 Yet another pool - a generic pool implementation for Java.
 
-For details, please read the main Yapool package description in the [https://yapool.googlecode.com/svn/branches/yapool/apidocs/0.8/index.html apidocs].
+For details, please read the main Yapool package description in the [https://yapool.googlecode.com/svn/branches/yapool/apidocs/0.9/index.html apidocs].
+
+For examples of what makes Yapool tick, look at the following example classe:
+ * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleEvents.java ExampleEvents] - creating a simple pruned pool and listening to pool events.
+ * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleConfig.java ExampleConfig] - using the BeanConfig class to configure a pool and pool factory, and log all properties.
+ * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleHsql.java ExampleHsql] - create a simple HSQL database connection pool suitable for unit testing.
+ * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleQueryCache.java ExampleQueryCache] - advanced example showing hoq to load queries from file and use a query cache for maximum efficienty.
 
 Downloads are available in the [https://code.google.com/p/yapool/source/browse/downloads source downloads] directory (use the "raw file link" at the rigth side for each file).
 
 Or use the following links:
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.1-artifacts.zip 0.8.1 binaries] (includes Javadoc)
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.8.1-project.zip 0.8.1 project] (includes all source code).
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.0-artifacts.zip 0.9.0 binaries] (includes Javadoc)
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.0-project.zip 0.9.0 project] (includes all source code).

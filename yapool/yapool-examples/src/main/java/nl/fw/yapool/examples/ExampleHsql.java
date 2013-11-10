@@ -69,6 +69,8 @@ public class ExampleHsql {
 		pool.getFactory().setAutoCommit(true);
 		// Let the HSQL driver show all queries
 		pool.getFactory().getConnectionProps().put("hsqldb.sqllog", "3");
+		// Close the database when last connection closes.
+		pool.getFactory().getConnectionProps().put("shutdown", "true");
 		// Prevent closing the last connection, this can shutdown/close the in memory HSQL database
 		pool.setMinSize(1);
 		pool.open();

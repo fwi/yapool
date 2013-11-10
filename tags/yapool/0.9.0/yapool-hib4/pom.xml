@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>nl.fw.yapool</groupId>
+		<artifactId>yapool-parent</artifactId>
+		<version>0.9.0</version>
+		<relativePath>../yapool-parent</relativePath>
+	</parent>
+	<artifactId>yapool-hib4</artifactId>
+	<name>Yapool Hibernate4</name>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>nl.fw.yapool</groupId>
+			<artifactId>yapool-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>4.1.8.Final</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<!-- Hibernate uses JBoss logging. According to: http://blog-it.hypoport.de/2012/04/30/hibernate4-verwendet-jboss-logging-statt-slf4j-durch-die-log4j-bridge-leiten-wir-die-logs-zu-logback/ 
+			the log4j-over-slf4j should solve this. But it does not ... -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.easytesting</groupId>
+			<artifactId>fest-assert</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hsqldb</groupId>
+			<artifactId>hsqldb</artifactId>
+			<version>2.3.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>

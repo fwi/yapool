@@ -115,6 +115,7 @@ public class ExampleQueryCache {
 		pool.setPoolName("QCExample");
 		pool.setFactory(new SqlFactory());
 		pool.getFactory().getConnectionProps().put("hsqldb.sqllog", "3");
+		pool.getFactory().getConnectionProps().put("shutdown", "true");
 		pool.setMinSize(1);
 		pool.open();
 		

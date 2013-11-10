@@ -4,11 +4,10 @@
 	<parent>
 		<groupId>nl.fw.yapool</groupId>
 		<artifactId>yapool-parent</artifactId>
-		<version>0.8.0</version>
+		<version>0.9.0-SNAPSHOT</version>
 		<relativePath>yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool</artifactId>
-	<version>0.8.1</version>
 	<packaging>pom</packaging>
 
 	<name>Yapool Aggregator</name>
@@ -18,6 +17,7 @@
 		<module>yapool-core</module>
 		<module>yapool-hib3</module>
 		<module>yapool-hib4</module>
+		<module>yapool-examples</module>
 	</modules>
 
 	<build>

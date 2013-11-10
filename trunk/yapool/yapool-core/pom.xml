@@ -8,6 +8,7 @@
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool-core</artifactId>
+	<version>0.9.1-SNAPSHOT</version>
 	<name>Yapool Core</name>
 
 	<dependencies>

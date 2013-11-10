@@ -2,7 +2,9 @@ package nl.fw.yapool;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +50,7 @@ public class BeanConfig {
 
 	protected static Logger log = LoggerFactory.getLogger(BeanConfig.class);
 	
-	/** Properties with uppercase-names ending with this value (default "PASSWORD") are always shown with value {@link #PASSWORD_VALUE} (default "secret"). */ 
+	/** Properties with uppercase-names that contain this value (default "PASSWORD") are always shown with value {@link #PASSWORD_VALUE} (default "secret"). */ 
 	public static String PASSWORD_KEY = "PASSWORD";
 	/** The replacement value for {@link #PASSWORD_KEY} values, default "secret". */
 	public static String PASSWORD_VALUE = "secret";
@@ -67,7 +69,7 @@ public class BeanConfig {
 	 * <br>See also {@link #filterPrefix(Map, String)} to prepare the props.   
 	 * @param bean The bean to apply the properties to.
 	 * @param props The properties to apply to the bean.
-	 * @return A description of all values that were set.
+	 * @return A description of methods for which values were set.
 	 */
 	@SuppressWarnings("unchecked")
 	public static String configure(Object bean, Map<?,?> props) {
@@ -138,22 +140,32 @@ public class BeanConfig {
 	 * @param bean The bean to configure with the properties (set to null to configure no bean).
 	 * @param props Original properties (remain unchanged).
 	 * @param prefix The prefix to filter on (set to null for none).
-	 * @param postfix The postfix to prioritize (set to null for none).
+	 * @param suffix The suffix to prioritize (set to null for none).
 	 * @return The filtered and prioritized properties. 
 	 */
-	public static Properties configure(Object bean, Map<?, ?> props, String prefix, String postfix) {
+	public static Properties configure(Object bean, Map<?, ?> props, String prefix, String suffix) {
 		
+		return configure(bean, props, prefix, suffix, (String[]) null);
+	}
+
+	/**
+	 * Same as {@link #configure(Object, Map, String, String)} but also removes properties 
+	 * that are listed in the filterSuffix.
+	 */
+	public static Properties configure(Object bean, Map<?, ?> props, String prefix, String suffix, String... filterSuffix) {
+
 		Properties p = new Properties();
 		p.putAll(prefix == null || prefix.isEmpty() ? props : filterPrefix(props, prefix));
-		if (!(postfix == null || postfix.isEmpty())) {
-			prioritizeSuffix(p, postfix);
+		if (!(suffix == null || suffix.isEmpty())) {
+			prioritizeSuffix(p, suffix, filterSuffix);
 		}
 		configure(bean, p);
 		return p;
 	}
-	
+
 	/**
 	 * Opposite function of {@link #configure(Object, Map)}: extracts bean values and puts them in the properties map.
+	 * @return a description of bean-methods and values
 	 */
 	public static String extract(Object bean, Map<Object, Object> props) {
 	
@@ -197,7 +209,7 @@ public class BeanConfig {
 		for (String key : getMethods.keySet()) {
 			Object v = getMethodValue(bean, getMethods.get(key), sb);
 			if (v != null) {
-				boolean pwd = (key.toUpperCase().endsWith(PASSWORD_KEY));
+				boolean pwd = (key.toUpperCase().contains(PASSWORD_KEY));
 				props.put(firstCharLowerCase(key), (pwd ? PASSWORD_VALUE : v.toString()));
 			}
 		}
@@ -221,7 +233,7 @@ public class BeanConfig {
 					continue;
 				}
 				String mkey = mapKey + mk.toString();
-				boolean pwd = (mkey.toUpperCase().endsWith(PASSWORD_KEY));
+				boolean pwd = (mkey.toUpperCase().contains(PASSWORD_KEY));
 				props.put(mkey, (pwd ? PASSWORD_VALUE : mv.toString()));
 			}
 		}
@@ -272,22 +284,47 @@ public class BeanConfig {
 	 * <br> (i.e. the <code>.test</code> properties take preference).
 	 * 
 	 */
-	@SuppressWarnings("unchecked")
 	public static void prioritizeSuffix(Map<?, ?> props, String suffix) {
 		
+		prioritizeSuffix(props, suffix, (String[]) null);
+	}
+	
+	/**
+	 * Same as {@link #prioritizeSuffix(Map, String)} but also removes properties with a suffix  
+	 * that is listed in filterSuffix.
+	 */
+	@SuppressWarnings("unchecked")
+	public static void prioritizeSuffix(Map<?, ?> props, String suffix, String... filterSuffix) {
+		
 		if (suffix == null || suffix.isEmpty()) return;
+		HashSet<String> filtered = new HashSet<String>();
+		if (filterSuffix != null && filterSuffix.length > 0) {
+			filtered.addAll(Arrays.asList(filterSuffix));
+		}
 		List<Object> pkeys = new ArrayList<Object>();
 		pkeys.addAll(props.keySet());
 		for(Object okey : pkeys) {
 			if (okey == null) continue;
 			String key = okey.toString();
 			if (key == null || key.isEmpty()) continue;
+			boolean filter = false;
+			for (String s : filtered) {
+				filter = key.endsWith(s);
+				if (filter) {
+					break;
+				}
+			}
+			if (filter) {
+				props.remove(key);
+				continue;
+			}
 			if (!key.endsWith(suffix)) continue;
 			key = key.substring(0, key.length() - suffix.length());
 			if (key.isEmpty()) continue;
 			((Map<String, Object>)props).put(key, props.get(okey));
 		}
 	}
+
 
 	protected static void setMethodValue(Object bean, Method m, Object value, StringBuilder sb) {
 		setMethodValue(bean, m, value, false, sb);
@@ -336,13 +373,13 @@ public class BeanConfig {
 			}
 			if (!unknown) {
 				sb.append('\n').append(m.getName()).append(" to ");
-				if (m.getName().toUpperCase().endsWith(PASSWORD_KEY)) {
+				if (m.getName().toUpperCase().contains(PASSWORD_KEY)) {
 					sb.append(PASSWORD_VALUE);
 				} else if (Map.class.isAssignableFrom(setType)) {
 					@SuppressWarnings("unchecked")
 					Map<Object, Object> mvalue = (Map<Object, Object>) value;
 					for (Object k : mvalue.keySet()) {
-						if (k.toString().toUpperCase().endsWith(PASSWORD_KEY)) {
+						if (k.toString().toUpperCase().contains(PASSWORD_KEY)) {
 							svalue = svalue.replace(k.toString() + "=" + mvalue.get(k), k.toString() + "=" + PASSWORD_VALUE);
 						}
 					}
@@ -390,14 +427,14 @@ public class BeanConfig {
 			}
 			if (known) {
 				sb.append('\n').append(m.getName()).append(" = ");
-				if (m.getName().toUpperCase().endsWith(PASSWORD_KEY)) {
+				if (m.getName().toUpperCase().contains(PASSWORD_KEY)) {
 					sb.append(PASSWORD_VALUE);
 				} else if (Map.class.isAssignableFrom(getType)) {
 					String s = value.toString();
 					@SuppressWarnings("unchecked")
 					Map<Object, Object> mvalue = (Map<Object, Object>) value;
 					for (Object k : mvalue.keySet()) {
-						if (k.toString().toUpperCase().endsWith(PASSWORD_KEY)) {
+						if (k.toString().toUpperCase().contains(PASSWORD_KEY)) {
 							s = s.replace(k.toString() + "=" + mvalue.get(k), k.toString() + "=" + PASSWORD_VALUE);
 						}
 					}

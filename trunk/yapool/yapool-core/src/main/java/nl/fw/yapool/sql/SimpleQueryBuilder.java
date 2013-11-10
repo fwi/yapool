@@ -52,6 +52,19 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 	}
 	
 	/**
+	 * Fills the sets used by {@link #hasGeneratedKeys(String, boolean)}.
+	 */
+	public boolean addGeneratesKeys(String queryName, boolean named) {
+		
+		if (named) {
+			genKeyNamedParameterStatement.add(queryName);
+		} else {
+			genKeyPreparedStatement.add(queryName);
+		}
+		return true;
+	}
+	
+	/**
 	 * Determines if a query returns generated keys.
 	 * Uses {@link #genKeyPreparedStatement} and {@link #genKeyNamedParameterStatement}. 
 	 * @param queryName The query name/ID.

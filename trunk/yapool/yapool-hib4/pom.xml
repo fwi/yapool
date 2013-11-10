@@ -8,7 +8,7 @@
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool-hib4</artifactId>
-	<version>0.8.0</version>
+	<version>0.8.2-SNAPSHOT</version>
 	<name>Yapool Hibernate4</name>
 
 	<dependencies>
@@ -48,7 +48,7 @@
 		<dependency>
 			<groupId>org.hsqldb</groupId>
 			<artifactId>hsqldb</artifactId>
-			<version>[2.0,)</version>
+			<version>2.3.1</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

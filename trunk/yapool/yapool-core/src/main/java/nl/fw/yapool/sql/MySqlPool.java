@@ -16,4 +16,9 @@ public class MySqlPool extends SqlPool {
 		setPoolName(getFactory().getPoolName());
 	}
 	
+	@Override
+	public MySqlFactory getFactory() {
+		return (MySqlFactory) super.getFactory();
+	}
+	
 }

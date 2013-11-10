@@ -12,6 +12,7 @@
 			<excludes>
 				<exclude>**/target/**</exclude>
 				<exclude>**/.*/**</exclude>
+				<exclude>/yapool-tom7/**</exclude>
 			</excludes>
 		</fileSet>
 	</fileSets>

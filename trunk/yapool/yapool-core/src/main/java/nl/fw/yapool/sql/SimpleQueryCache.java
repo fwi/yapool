@@ -25,6 +25,7 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	protected Map<Connection, Map<String, Object>> qcache = new ConcurrentHashMap<Connection, Map<String, Object>>();
 	protected QueryCacheStats qcacheStats;
 	protected IQueryBuilder qb;
+	protected String poolName = "SqlPool";
 	
 	public SimpleQueryCache() {
 		super();
@@ -39,7 +40,17 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	public void setQueryBuilder(IQueryBuilder qb) {
 		this.qb = qb;
 	}
+
+	public IQueryBuilder getQueryBuilder() {
+		return qb;
+	}
 	
+	public void listen(SqlPool pool) {
+		
+		pool.getEvents().addPoolListener(this);
+		poolName = pool.getPoolName();
+	}
+
 	/**
 	 * Closes (named) prepared statements related to a connection that gets event {@link PoolEvent#DESTROYING}
 	 */
@@ -140,6 +151,25 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	
 	public QueryCacheStats getStats() {
 		return qcacheStats;
+	}
+	
+	@Override
+	public String toString() {
+		
+		int qcacheSize = 0;
+		int cachedQueries = 0;
+		for (Connection c : qcache.keySet()) {
+			Map<String, Object> cc = qcache.get(c);
+			if (cc != null) {
+				qcacheSize++;
+				cachedQueries += cc.size();
+			}
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.getClass().getSimpleName()).append(" Query cache for pool ").append(poolName)
+		.append(" caching queries for ").append(qcacheSize).append(" connections containing ")
+		.append(cachedQueries).append(" cached queries.");
+		return sb.toString();
 	}
 
 }

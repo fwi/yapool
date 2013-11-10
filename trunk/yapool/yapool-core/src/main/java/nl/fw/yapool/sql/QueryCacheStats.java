@@ -45,14 +45,15 @@ public class QueryCacheStats {
 			totalHits += qs.hitCount.get();
 			totalMisses += qs.missCount.get();
 		}
+		long total = totalHits + totalMisses;
 		sb.append('\n').append("Percentage hits: ");
 		if (totalHits == 0L) {
-			sb.append("0% (").append(totalMisses).append(")");
+			sb.append("0%");
 		} else if (totalMisses == 0L) {
 			sb.append("100%");
 		} else {
-			sb.append(((totalHits-totalMisses)*100) / totalHits)
-			.append("% (").append(totalHits).append(" out of ").append(totalHits + totalMisses).append(")");
+			sb.append(((total-totalMisses)*100) / total)
+			.append("% (").append(totalHits).append(" hits out of ").append(total).append(")");
 		}
 		ArrayList<String> queries = new ArrayList<String>(qstats.keySet());
 		Collections.sort(queries);

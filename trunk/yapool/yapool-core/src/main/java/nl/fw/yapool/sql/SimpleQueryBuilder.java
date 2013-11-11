@@ -125,18 +125,19 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 -- Empty start tag, query will get query-count as ID (in this case "1").
 --[]
 select something from somehwere
--- End query tag.
+-- End-tag for query (optional).
 --[/]
 -- Query with name INSERT_ITEM
 --[INSERT_ITEM]
 insert into items (item_key, item) values (@itemKey, @item)
--- Name in end tag must match start-tag.
---[/INSERT_ITEM]
+-- If end-tag is used the name in end-tag must match start-tag, e.g. --[/INSERT_ITEM].
+-- End-tag is optional, start-tag below marks end for INSERT_ITEM query
 --[BIG_QUERY]
 select a, b,c 
 from x, y, z
 where this=that and other=stuff
 --[/BIG_QUERY]
+-- Last end-tag is also optional (end of document marks end for BIG_QUERY)
 }</pre>
 	 * All text between begin and end tag is not formatted in any way and taken literally as the query,
 	 * but a line is skipped if it is empty, starts with {@code --} (but not "{@code --[}" which is the tag-marker)
@@ -160,7 +161,7 @@ where this=that and other=stuff
 				continue;
 			}
 			if (line.charAt(0) == '[' && line.charAt(line.length()-1) == ']') {
-				if (line.charAt(1) == '/') {
+				if (line.charAt(1) == '/') { // query end tag
 					if (q == null) {
 						throw new IOException("Unexpected closing query-key at line " + reader.getLineNumber() + ": " + line);
 					} else if (q[0] == null) {
@@ -168,27 +169,28 @@ where this=that and other=stuff
 					} else if (q[1] == null) {
 						throw new IOException("Closing query-key found without query at line " + reader.getLineNumber() + ": " + line);
 					}
-					String k = line.substring(2, line.length()-1);
-					if (k.isEmpty()) {
-						k = Integer.toString(qCount + 1);
-					}
-					if (!k.equals(q[0])) {
-						throw new IOException("Closing query-key does not match opening query key [" + q[0] + "] at line " + reader.getLineNumber() + ": " + line);
-					}
-					if (qmap.containsKey(q[0])) {
-						if (log.isDebugEnabled()) {
-							log.debug("Replacing old query for " + q[0]);
+					if (q[1] == null) {
+						log.warn("Ignoring empty query " + q[0] + " at line " + reader.getLineNumber());
+					} else {
+						String k = line.substring(2, line.length()-1);
+						if (k.isEmpty()) {
+							k = Integer.toString(qCount + 1);
 						}
-					}
-					qmap.put(q[0], q[1]);
-					qCount++;
-					if (log.isTraceEnabled()) {
-						log.trace("Added query " + q[0] + ":\n" + q[1]);
+						if (!k.equals(q[0])) {
+							throw new IOException("Closing query-key does not match opening query key [" + q[0] + "] at line " + reader.getLineNumber() + ": " + line);
+						}
+						addQuery(q, qmap);
+						qCount++;
 					}
 					q = null;
-				} else {
+				} else { // query start tag
 					if (q != null) {
-						throw new IOException("Missing closing query key at line " + reader.getLineNumber());
+						if (q[1] == null) {
+							log.warn("Ignoring empty query " + q[0] + " at line " + reader.getLineNumber());
+						} else {
+							addQuery(q, qmap);
+							qCount++;
+						}
 					}
 					String k = line.substring(1, line.length()-1);
 					if (k.isEmpty()) {
@@ -197,7 +199,7 @@ where this=that and other=stuff
 					q = new String[2];
 					q[0] = k;
 				}
-			} else {
+			} else { // no query tag
 				if (q == null) {
 					throw new IOException("Missing opening query key at line " + reader.getLineNumber() + ": " + line);
 				}
@@ -208,7 +210,28 @@ where this=that and other=stuff
 				}
 			}
 		}
+		if (q != null) {
+			if (q[1] == null) {
+				log.warn("Ignoring empty query " + q[0] + " at line " + reader.getLineNumber());
+			} else {
+				addQuery(q, qmap);
+				qCount++;
+			}
+		}
 		log.debug("Loaded " + qCount + " queries.");
+	}
+	
+	private static void addQuery(String[] q, Map<String, String> qmap) {
+		
+		if (qmap.containsKey(q[0])) {
+			if (log.isDebugEnabled()) {
+				log.debug("Replacing old query for " + q[0]);
+			}
+		}
+		qmap.put(q[0], q[1]);
+		if (log.isTraceEnabled()) {
+			log.trace("Added query " + q[0] + ":\n" + q[1]);
+		}
 	}
 	
 }

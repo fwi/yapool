@@ -160,6 +160,37 @@ public class TestBeanConfig {
 		assertEquals(BeanConfig.PASSWORD_VALUE, props.get("connection.password"));
 		assertEquals(BeanConfig.PASSWORD_VALUE, props.get("myPassword"));
 	}
+
+	@Test
+	public void testSuffixFilter() {
+
+		SqlFactory b = new SqlFactory();
+		Properties p = new Properties();
+		p.setProperty("connection.user", "default-user");
+		p.setProperty("connection.password", "default-pwd");
+		p.setProperty("connection.password.test", "test-pwd");
+		p.setProperty("connection.user.prod", "prod-user");
+		p.setProperty("connection.password.prod", "prod-pwd");
+		BeanConfig.configure(b, p, null, null, ".test", ".prod");
+		assertEquals(b.getConnectionProps().get("user"), "default-user");
+		assertEquals(b.getConnectionProps().get("password"), "default-pwd");
+		assertFalse(b.getConnectionProps().contains("password.test"));
+		assertFalse(b.getConnectionProps().contains("password.prod"));
+
+		b = new SqlFactory();
+		BeanConfig.configure(b, p, null, ".test", ".prod");
+		assertEquals(b.getConnectionProps().get("user"), "default-user");
+		assertEquals(b.getConnectionProps().get("password"), "test-pwd");
+		assertFalse(b.getConnectionProps().contains("password.test"));
+		assertFalse(b.getConnectionProps().contains("password.prod"));
+		
+		b = new SqlFactory();
+		BeanConfig.configure(b, p, null, ".prod", ".test");
+		assertEquals(b.getConnectionProps().get("user"), "prod-user");
+		assertEquals(b.getConnectionProps().get("password"), "prod-pwd");
+		assertFalse(b.getConnectionProps().contains("password.test"));
+		assertFalse(b.getConnectionProps().contains("password.prod"));
+	}
 	
 	final static class SqlFactoryPwd extends SqlFactory {
 		

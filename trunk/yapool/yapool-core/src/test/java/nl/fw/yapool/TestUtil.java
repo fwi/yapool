@@ -1,9 +1,8 @@
 package nl.fw.yapool;
 
+import java.io.Closeable;
+import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
-
-import nl.fw.yapool.IPoolListener;
-import nl.fw.yapool.PrunedPool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +83,17 @@ public class TestUtil {
 			throw new RuntimeException(e);
 		}
 		log.debug("Await time: " + (System.currentTimeMillis() - tstart));
+	}
+	
+	public static void close(Closeable c) {
+	
+		try {
+			if (c != null) c.close();
+		} catch (Exception ignored) {}
+	}
+
+	public static InputStream getResourceStream(String rname) {
+		return Thread.currentThread().getContextClassLoader().getResourceAsStream(rname);
 	}
 	
 }

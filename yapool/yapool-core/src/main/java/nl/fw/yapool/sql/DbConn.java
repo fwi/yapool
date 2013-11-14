@@ -213,22 +213,38 @@ public class DbConn {
 	}
 	
 	/**
-	 * Executes an update query set in {@link #ps} or {@link #nps} and sets any generated keys in {@link #rs}
-	 * (which will be empty if there are no auto-generated keys).
+	 * Calls {@link #executeUpdate(boolean)} with "fetch generated keys" set to true.
 	 * @return number of records updated
 	 */
 	public int executeUpdate() throws SQLException {
+		return executeUpdate(true);
+	}
+	
+	/**
+	 * Executes an insert/update query set in {@link #ps} or {@link #nps} and sets any generated keys in {@link #rs}
+	 * if parameter "fetchGeneratedKeys" is true ({@link #rs} will be empty if there are no auto-generated keys).
+	 * @param fetchGeneratedKeys if true, {@link #rs} is set to the generated keys. Note that some database drivers
+	 * (like MySQL) will throw an exception if the insert/update statement is not created 
+	 * with the {@link Statement#RETURN_GENERATED_KEYS} option but generated keys are fetched in this method.  
+	 * @return number of records updated
+	 */
+	public int executeUpdate(boolean fetchGeneratedKeys) throws SQLException {
 		
 		int updateCount = -1;
 		if (ps != null) {
 			updateCount = ps.executeUpdate();
-			rs = ps.getGeneratedKeys();
+			if (fetchGeneratedKeys) {
+				rs = ps.getGeneratedKeys();
+			}
 		} else if (nps != null) {
 			updateCount = nps.executeUpdate();
-			rs = nps.getStatement().getGeneratedKeys();
+			if (fetchGeneratedKeys) {
+				rs = nps.getStatement().getGeneratedKeys();
+			}
 		}
 		return updateCount;
 	}
+
 	
 	/** 
 	 * Closes {@link #rs} and {@link #st} if set.
@@ -245,6 +261,18 @@ public class DbConn {
 		if (st != null) { close(st); st = null; }
 		if (ps != null) { if (qc == null) close(ps); ps = null; }
 		if (nps != null) { if (qc == null) close(nps); nps = null; }
+	}
+	
+	/**
+	 * Commits the transaction if a connection is open and calls {@link #close()}.
+	 * @throws SQLException if commit fails.
+	 */
+	public void commitAndClose() throws SQLException {
+		
+		if (conn != null) {
+			conn.commit();
+		}
+		close();
 	}
 	
 	/**

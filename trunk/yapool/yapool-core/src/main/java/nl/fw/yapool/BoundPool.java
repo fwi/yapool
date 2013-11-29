@@ -212,6 +212,13 @@ public class BoundPool<T> extends Pool<T> {
 		return t;
 	}
 	
+	/**
+	 * Puts the resource back in the pool so that it can be re-used.
+	 * If the resource was evicted or not leased (i.e. a foreign resource), 
+	 * the resource will be destroyed (and not put back into the pool).
+	 * @param t The leased resource to put back into the pool.
+	 * @return null if the resource was not put back in the pool.
+	 */
 	@Override
 	public T release(T t) {
 		
@@ -285,6 +292,30 @@ public class BoundPool<T> extends Pool<T> {
 			destroy(removed);
 		}
 		return removed;
+	}
+	
+	/**
+	 * Evicts the leased resource from the pool.
+	 * Does not fire an {@link PoolEvent#LEASE_EXPIRED} event.
+	 * @param destroy if true, the evicted resource is destroyed. If false, 
+	 * make sure to destroy/close the resource yourself when appropriate.
+	 * Note that an evicted resource that is (eventually) released to the pool, is always detroyed by the pool
+	 * (and not put back into the pool).  
+	 * @param t The leased resource to evict.
+	 * @return true if the resource was found in the leased resources list and evicted.
+	 */
+	public boolean evictLeased(T t, boolean destroy) {
+		return (removeLeased(t, destroy, false) != null);
+	}
+	
+	/**
+	 * Evicts the idle resource from the pool and destroys it.
+	 * Does not fire an {@link PoolEvent#IDLE_EXPIRED} event.
+	 * @param t The idle resource to evict.
+	 * @return true if the resource was found in the idle resources list and evicted.
+	 */
+	public boolean evictIdle(T t) {
+		return (removeIdle(t, false) != null);
 	}
 
 	/**

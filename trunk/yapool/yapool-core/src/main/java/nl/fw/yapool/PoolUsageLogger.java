@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import nl.fw.yapool.PrunedPool;
 
 /**
- * Logs a pruned pool's performance at regular intervals using all readily available counters and sizes
+ * Logs a pruned pool's status at regular intervals using all readily available counters and sizes
  * (there is no performance impact on the pool itself).
  * E.g. a log-statement could look like:
  * <br>{@code PoolName size: 10, leased: 6, idle: 4, created: 1, EXPIRED: 1}
@@ -114,7 +114,7 @@ public class PoolUsageLogger implements Runnable {
 	
 	/**
 	 * Evaluates the "lastCount" values.
-	 * @return true if any values have changed since last call to {@link #getReport()}.
+	 * @return true if a resource is leased or any values have changed since last call to {@link #getReport()},
 	 */
 	public boolean report() {
 		

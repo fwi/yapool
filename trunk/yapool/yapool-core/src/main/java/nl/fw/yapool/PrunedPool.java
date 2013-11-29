@@ -108,7 +108,6 @@ public class PrunedPool<T> extends BoundPool<T> {
 		}
 	}
 
-
 	@Override
 	public T release(T t) {
 		
@@ -120,14 +119,38 @@ public class PrunedPool<T> extends BoundPool<T> {
 		}
 		return released;
 	}
+	
+	@Override
+	public boolean evictLeased(T t, boolean destroy) {
+		
+		boolean evicted = false;
+		if (super.evictLeased(t, destroy)) {
+			evicted = true;
+			// If the resource was not destroyed, there is a chance of memory leakage.
+			// Therefor, remove all references to the resource now.
+			if (!destroy) {
+				removeReferences(t);
+			}
+		}
+		return evicted;
+	}
 
 	@Override
 	protected void destroy(T t) {
 		
+		removeReferences(t);
+		super.destroy(t);
+	}
+	
+	/**
+	 * Removes all references to the resource in maps that keep track of the resource.
+	 * @param t The resource to remove from prune administration.
+	 */
+	protected void removeReferences(T t) {
+		
 		idleTimeStart.remove(t);
 		leaseTimeEnd.remove(t);
 		leasers.remove(t);
-		super.destroy(t);
 	}
 
 	@Override

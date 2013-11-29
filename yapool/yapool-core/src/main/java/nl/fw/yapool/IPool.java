@@ -36,7 +36,7 @@ public interface IPool<T> {
 	
 	/**
 	 * Puts the resource back in the pool so that it can be re-used.
-	 * @param r
+	 * @param r The leased resource to put back into the pool.
 	 * @return null if the resource was not put back in the pool.
 	 */
 	T release(T r);

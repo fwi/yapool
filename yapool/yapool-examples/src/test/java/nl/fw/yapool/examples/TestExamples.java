@@ -13,6 +13,7 @@ public class TestExamples {
 			new ExampleEvents().demonstrate(); 
 			new ExampleConfig().demonstrate(); 
 			new ExampleHsql().demonstrate(); 
+			new ExampleValidateOnCheckIn().demonstrate();
 			new ExampleQueryCache().demonstrate(); 
 		} catch (Exception e) {
 			e.printStackTrace();

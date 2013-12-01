@@ -7,7 +7,7 @@
 		<version>0.9.0</version>
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
-	<version>0.9.1-SNAPSHOT</version>
+	<version>0.9.1</version>
 	<artifactId>yapool-examples</artifactId>
 	<name>Yapool Examples</name>
 

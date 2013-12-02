@@ -23,8 +23,16 @@ import org.slf4j.LoggerFactory;
  *   ... handle error ...
  * } finally { 
  * 	c.close(); 
- * }
- * </pre>
+ * }</pre>
+ * or <pre>
+ * DbConn c = new DbConn(myPool);
+ * try {
+ * 	// do queries
+ *   c.commitAndClose();
+ * } catch (Exception e) {
+ *   c.rollbackAndClose(e);
+ * }</pre> 
+ * 
  * @author frederikw
  *
  */

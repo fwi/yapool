@@ -92,7 +92,7 @@ public class ExampleValidateOnCheckIn {
 				return super.release(l);
 			}
 		};
-		// 
+
 		pool.setFactory(new LongFactory());
 
 		// When opening the pool, the "isValid" method from the factory is not called for created resources.

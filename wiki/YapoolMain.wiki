@@ -4,7 +4,7 @@ Yet another pool - a generic pool implementation for Java.
 
 For details, please read the main Yapool package description in the [https://yapool.googlecode.com/svn/branches/yapool/apidocs/0.9/index.html apidocs].
 
-For examples of what makes Yapool tick, look at the following example classe:
+For examples of what makes Yapool tick, have a look at the following classes:
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleEvents.java ExampleEvents] - creating a simple pruned pool and listening to pool events.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleConfig.java ExampleConfig] - using the BeanConfig class to configure a pool and pool factory, and log all properties.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleHsql.java ExampleHsql] - create a simple HSQL database connection pool suitable for unit testing.

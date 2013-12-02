@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Demonstrates validation of resources when they are released/checked in.
  * Some database pools have this as an option. Yapool's PrunedPool/SQLPool 
- * only validates before resources are acquired (and it that validation fails,
+ * only validates before resources are acquired (and if that validation fails,
  * tries to acquire another one or create one).
  * Validation before checkin/release can be implemented using a listener, 
  * but this demonstration simply extends PrunedPool's release method.

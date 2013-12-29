@@ -8,6 +8,7 @@
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool-hib3</artifactId>
+	<version>0.9.1</version>
 	<name>Yapool Hibernate3</name>
 
 	<dependencies>

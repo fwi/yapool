@@ -257,8 +257,13 @@ public class PrunedPool<T> extends BoundPool<T> {
 	/**
 	 * Try to create new idle resources until minimum size is reached.
 	 * Any errors are catched and logged.
+	 * <br>The pool pruner uses this method when it detects leases have expired. 
+	 * <br>This method may be called by the application using the pool when, for example,
+	 * the application detects a database has restarted.
+	 * In this case all invalid connections are automatically removed by the pool,
+	 * but new connections are only created as needed (i.e. pool remains below minimum size for a while).
 	 */
-	protected void ensureMinSize() {
+	public void ensureMinSize() {
 		
 		try {
 			while (getSize() < getMinSize()) {

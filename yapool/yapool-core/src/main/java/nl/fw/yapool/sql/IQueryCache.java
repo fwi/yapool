@@ -32,4 +32,9 @@ public interface IQueryCache extends IPoolListener {
 	 * The query builder used to create (named parameter) prepared statements.
 	 */
 	void setQueryBuilder(IQueryBuilder qb);
+	
+	/**
+	 * Returns true if the (named) prepared statement is cached.
+	 */
+	boolean isCached(Connection c, Object statement);
 }

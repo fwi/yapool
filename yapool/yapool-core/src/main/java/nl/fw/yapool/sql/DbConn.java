@@ -48,6 +48,13 @@ public class DbConn {
 	 * Note that a query cache for statements with auto-generated keys will throw an SQLException.
 	 */
 	public IQueryCache qc;
+	
+	/** 
+	 * Query builder used to create (named) prepared statements. 
+	 * Note that a query builder for statements with auto-generated keys will throw an SQLException.
+	 */
+	public IQueryBuilder qb;
+
 	/** Connection factory to get and close a connection. Used when {@link #pool} is null. */
 	public SqlFactory connFactory;
 	/** An actual database connection, provided by implementation or set when {@link #getConnection()} is called. */
@@ -66,7 +73,6 @@ public class DbConn {
 	
 	/** Sets {@link #pool} to given pool. */
 	public DbConn(final SqlPool pool) {
-		this(pool, null);
 		this.pool = pool;
 	}
 	
@@ -75,7 +81,13 @@ public class DbConn {
 		this.pool = pool;
 		this.qc = qc;
 	}
-	
+
+	/** Sets {@link #pool} to given pool with prepared statement cache for connections. */
+	public DbConn(final SqlPool pool, IQueryBuilder qb) {
+		this.pool = pool;
+		this.qb = qb;
+	}
+
 	/** Sets {@link #connFactory} to the given connection factory. */
 	public DbConn(final SqlFactory connFactory) {
 		this.connFactory = connFactory;
@@ -152,6 +164,8 @@ public class DbConn {
 		} else { 
 			if (qc != null) {
 				ps = qc.getQuery(conn, query);
+			} else if (qb != null) {
+				ps = qb.createQuery(conn, query);
 			} else {
 				ps = conn.prepareStatement(query);
 			}
@@ -179,6 +193,8 @@ public class DbConn {
 		} else { 
 			if (qc != null) {
 				nps = qc.getNamedQuery(conn, query);
+			} else if (qb != null) {
+				nps = qb.createNamedQuery(conn, query);
 			} else {
 				nps = new NamedParameterStatement(conn, query);
 			}
@@ -188,6 +204,7 @@ public class DbConn {
 	
 	/**
 	 * Execute {@link #st} statement with given query.
+	 * <br> If {@link #qb} is set, tries to lookup the query-SQL with the given query as query-name.
 	 * <br>Calls {@link #setStatement()} if needed, never uses {@link #qc}.
 	 * @return update count or -1 if there is no result or when a result-set is available and set to {@link #rs} .
 	 */
@@ -197,7 +214,8 @@ public class DbConn {
 			setStatement();
 		}
 		int updateCount = -1;
-		boolean haveRs = st.execute(query);
+		String qbQuery = (qb == null ? null : qb.getQuerySql(query));
+		boolean haveRs = st.execute(qbQuery == null ? query : qbQuery);
 		if (haveRs) {
 			rs = st.getResultSet();
 		} else {
@@ -256,7 +274,7 @@ public class DbConn {
 	
 	/** 
 	 * Closes {@link #rs} and {@link #st} if set.
-	 * Only closes {@link #ps} and/or {@link #nps} if they are not cached ({@link #qc} is not set). 
+	 * Only closes {@link #ps} and/or {@link #nps} if they are not cached ({@link #qc} is <code>null</code> or <code>qc.isCached</code> returns false). 
 	 * Does not release or close the database connection.
 	 * Uses the {@link #closeLogger} to log errors as warnings.
 	 * <br>Sets rs, st, ps and nps to null so that subsequent calls to this method or {@link #close()} have no effect. 
@@ -265,10 +283,26 @@ public class DbConn {
 	 */
 	public void closeQuery() {
 		
-		if (rs != null) { close(rs); rs = null; }
-		if (st != null) { close(st); st = null; }
-		if (ps != null) { if (qc == null) close(ps); ps = null; }
-		if (nps != null) { if (qc == null) close(nps); nps = null; }
+		if (rs != null) { 
+			close(rs); 
+			rs = null; 
+		}
+		if (st != null) { 
+			close(st); 
+			st = null; 
+		}
+		if (ps != null) { 
+			if (qc == null || !qc.isCached(conn, ps)) {
+				close(ps); 
+			}
+			ps = null; 
+		}
+		if (nps != null) { 
+			if (qc == null  || !qc.isCached(conn, nps)) { 
+				close(nps); 
+			}
+			nps = null; 
+		}
 	}
 	
 	/**

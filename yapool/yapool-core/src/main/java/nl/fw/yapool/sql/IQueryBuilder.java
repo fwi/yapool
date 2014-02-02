@@ -14,6 +14,11 @@ import java.sql.SQLException;
 public interface IQueryBuilder {
 
 	/**
+	 * Returns the SQL-string for the query-name, or null if query-name is unknown.
+	 */
+	String getQuerySql(String queryName);
+	
+	/**
 	 * Creates a prepared statement for the connection.
 	 */
 	PreparedStatement createQuery(Connection c, String queryName) throws SQLException;

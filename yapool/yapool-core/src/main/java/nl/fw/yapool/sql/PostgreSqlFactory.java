@@ -1,9 +1,7 @@
 package nl.fw.yapool.sql;
 
-import java.util.Properties;
-
 /**
- * A MySql database connection factory.
+ * A PostgreSQL database connection factory.
  * @author Fred
  *
  */
@@ -18,8 +16,7 @@ public class PostgreSqlFactory extends SqlFactory {
 	public static final String JDBC_URL_TEST_LOCAL = "jdbc:postgresql://localhost:5432/test";
 
 	/**
-	 * Overwrite some default SqlFactory values to use more appropriate MySql defaults.
-	 * More defaults can be set using {@link #applyStableConnectionProps(Properties)}.
+	 * Overwrite some default SqlFactory values to use more appropriate PostgreSQL defaults.
 	 * <br>Note that autocommit is default set to false.
 	 */
 	public PostgreSqlFactory() {

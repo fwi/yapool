@@ -34,6 +34,10 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 	/** Set containing query names of named parameter statements that generate keys. */
 	protected Set<String> genKeyNamedParameterStatement = new HashSet<String>();
 	
+	public String getQuerySql(String queryName) {
+		return queriesByName.get(queryName);
+	}
+	
 	/**
 	 * Looks up the query associated with the query name.
 	 * If there is no query associated with the query name, the query name is returned.
@@ -42,7 +46,7 @@ public class SimpleQueryBuilder implements IQueryBuilder {
 	 */
 	public String getQueryByName(String queryName) {
 		
-		String q = queriesByName.get(queryName);
+		String q = getQuerySql(queryName);
 		return (q == null ? queryName : q);
 	}
 

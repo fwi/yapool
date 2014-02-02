@@ -3,8 +3,6 @@ package nl.fw.yapool.sql;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-
-
 import nl.fw.yapool.sql.DbConn;
 import nl.fw.yapool.sql.SqlPool;
 

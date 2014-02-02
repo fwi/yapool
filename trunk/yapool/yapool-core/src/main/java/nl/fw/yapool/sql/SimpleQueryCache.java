@@ -121,6 +121,20 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 		
 		Map<String, Object> cc = getConnectionCache(c);
 		Object o = cc.get(queryName);
+		if (o != null) {
+			boolean closed = false;
+			if (named) {
+				closed = ((NamedParameterStatement)o).getStatement().isClosed();
+			} else {
+				closed = ((PreparedStatement)o).isClosed();
+			}
+			if (closed) {
+				cc.remove(o);
+				o = null;
+				DbConn.closeLogger.warn("Cached " + (named ? "named" : "") + " prepared statement [" + queryName 
+						+ "] removed from query cache because it was closed.");
+			}
+		}
 		if (o == null) {
 			if (qcacheStats != null) {
 				qcacheStats.addMiss(queryName);
@@ -140,6 +154,12 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 			}
 		}
 		return o;
+	}
+	
+	@Override
+	public boolean isCached(Connection c, Object statement) {
+		Map<String, Object> cc = qcache.get(c);
+		return (cc == null ? false : cc.containsValue(statement));
 	}
 
 	/**

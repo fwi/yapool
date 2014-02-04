@@ -16,8 +16,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A simple {@link IQueryCache}
- * that also has the option to update some {@link QueryCacheStats}. 
+ * A {@link SimpleQueryCache} that also limits the amount of cached queries (see {@link #setMaxOpen(int)}).
+ * To keep relevant queries in cache, a {@link BoundCacheWeight} instance is used.
+ * In general, this cache only works properly when:
+ * <br> - a LIFO connection queue is used (like {@link SqlPool} does).
+ * <br> - idle connections are closed (default 60 seconds in {@link SqlPool}).
+ * If this is not done, the query cache could end up containing only stale statements. 
+ * <br> - statements used in a loop are not closed but re-used (e.g. when inserting data in a loop).
+ * If this is not done, one statement can push other statements out of the cache.
+ * <p>
+ * To fine-tune cache-flushing, use {@link #setMinWeightFactor(int)}.
  * @author Fred
  *
  */
@@ -27,6 +35,7 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 	public static final int DEFAULT_MAX_OPEN = 200;
 	
 	protected Logger log = LoggerFactory.getLogger(getClass());
+	
 	protected Map<Connection, Map<String, Object>> qcache = new ConcurrentHashMap<Connection, Map<String, Object>>();
 	protected QueryCacheStats qcacheStats;
 	protected IQueryBuilder qb;
@@ -43,7 +52,7 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 		super();
 		addWantEvent(PoolEvent.DESTROYING);
 		setQueryBuilder(new SimpleQueryBuilder());
-		weightStats = new BoundCacheWeight();
+		weightStats = new BoundCacheWeight(this);
 		setMaxOpen(maxOpen);
 	}
 
@@ -70,6 +79,10 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 		return maxOpen;
 	}
 	
+	/**
+	 * The maximum amount of (open) cached queries.
+	 * Default set to 200, see {@link #DEFAULT_MAX_OPEN}.
+	 */
 	public void setMaxOpen(int maxOpen) {
 		if (maxOpen > 0) {
 			this.maxOpen = maxOpen;
@@ -241,6 +254,20 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 		return qcacheStats;
 	}
 	
+	/**
+	 * Sets the minimum weight factor used by this cache's {@link BoundCacheWeight}.
+	 * See also {@link BoundCacheWeight#DEFAULT_MIN_WEIGHT_FACTOR}.
+	 * 
+	 * @return
+	 */
+	public void setMinWeightFactor(int minWeightFactor) {
+		weightStats.setMinWeightFactor(minWeightFactor);
+	}
+	
+	public int getMinWeightFactor() {
+		return weightStats.getMinWeightFactor();
+	}
+	
 	@Override
 	public String toString() {
 		
@@ -257,6 +284,7 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 		sb.append(this.getClass().getSimpleName()).append(" Query cache for pool ").append(poolName)
 		.append(" caching queries for ").append(qcacheSize).append(" connections containing ")
 		.append(cachedQueries).append(" cached queries.");
+		sb.append(" Weight calculated for ").append(weightStats.size()).append(" cached queries.");
 		return sb.toString();
 	}
 

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import nl.fw.yapool.IPool;
 import nl.fw.yapool.PoolEvent;
@@ -20,20 +21,32 @@ import org.slf4j.LoggerFactory;
  * @author Fred
  *
  */
-public class SimpleQueryCache extends PoolListener implements IQueryCache {
+public class BoundQueryCache extends PoolListener implements IQueryCache {
+	
+	/** By default, allow a maximum of 200 open queries. */
+	public static final int DEFAULT_MAX_OPEN = 200;
 	
 	protected Logger log = LoggerFactory.getLogger(getClass());
 	protected Map<Connection, Map<String, Object>> qcache = new ConcurrentHashMap<Connection, Map<String, Object>>();
 	protected QueryCacheStats qcacheStats;
 	protected IQueryBuilder qb;
 	protected String poolName = "SqlPool";
+	private int maxOpen;
+	protected final AtomicInteger openQueries = new AtomicInteger();
+	protected BoundCacheWeight weightStats;
+
+	public BoundQueryCache() {
+		this(DEFAULT_MAX_OPEN);
+	}
 	
-	public SimpleQueryCache() {
+	public BoundQueryCache(int maxOpen) {
 		super();
 		addWantEvent(PoolEvent.DESTROYING);
 		setQueryBuilder(new SimpleQueryBuilder());
+		weightStats = new BoundCacheWeight();
+		setMaxOpen(maxOpen);
 	}
-	
+
 	/**
 	 * Set to {@link SimpleQueryBuilder} by default constructor.
 	 */
@@ -51,6 +64,16 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 		
 		pool.getEvents().addPoolListener(this);
 		poolName = pool.toString();
+	}
+
+	public int getMaxOpen() {
+		return maxOpen;
+	}
+	
+	public void setMaxOpen(int maxOpen) {
+		if (maxOpen > 0) {
+			this.maxOpen = maxOpen;
+		}
 	}
 
 	/**
@@ -76,6 +99,7 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	
 	/**
 	 * Closes the PreparedStatement / NamedParameterStatement and catches any errors.
+	 * <br>Decreases the {@link #openQueries} count and removes the query from {@link #weightStats}.
 	 * @param queryName the name/ID associated with the statement.
 	 * @param o the statement
 	 */
@@ -83,11 +107,14 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 		
 		if (o instanceof PreparedStatement) {
 			DbConn.close(((PreparedStatement)o));
+			openQueries.decrementAndGet();
 		} else if (o instanceof NamedParameterStatement) {
 			DbConn.close(((NamedParameterStatement)o));
+			openQueries.decrementAndGet();
 		} else {
 			DbConn.closeLogger.warn("Cannot close unknown type of statement named " + queryName + ", statement: " + o);
 		}
+		weightStats.remove(o);
 	}
 	
 	/**
@@ -132,6 +159,8 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 			}
 			if (closed) {
 				cc.remove(o);
+				openQueries.decrementAndGet();
+				weightStats.remove(o);
 				o = null;
 				DbConn.closeLogger.warn("Cached " + (named ? "named" : "") + " prepared statement [" + queryName 
 						+ "] removed from query cache because it was closed.");
@@ -149,13 +178,50 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 			if (o == null) {
 				throw new RuntimeException("Could not create a prepared statement for query name " + queryName);
 			}
+			openQueries.incrementAndGet();
 			cc.put(queryName, o);
 		} else {
 			if (qcacheStats != null) {
 				qcacheStats.addHit(queryName);
 			}
 		}
+		weightStats.addHit(o, cc);
+		if (openQueries.get() > maxOpen) {
+			if (!cleanOpen(cc, queryName)) {
+				cc.remove(queryName);
+				weightStats.remove(o);
+				openQueries.decrementAndGet();
+				if (log.isDebugEnabled()) {
+					log.debug("Cache full, cannot add query [" + queryName + "]");
+				}
+			}
+		}
 		return o;
+	}
+	
+	/**
+	 * Removes one query from cache or all queries with weight 0. 
+	 * @param cc The query cache for the connection.
+	 * @param excludeQueryName The query name that must be untouched.
+	 * @return true if one or more queries were removed from cache.
+	 */
+	protected boolean cleanOpen(Map<String, Object> cc, String excludeQueryName) {
+		
+		boolean cleanedOne = false;
+		int weight = 0;
+		while (weight == 0) {
+			String qname = weightStats.getLeastRelevant(cc, excludeQueryName);
+			if (qname == null) {
+				break;
+			}
+			cleanedOne = true;
+			weight = weightStats.getWeight(cc.get(qname));
+			closeQuery(qname, cc.remove(qname));
+			if (log.isDebugEnabled()) {
+				log.debug("Removed query [" + qname + "] with weight " + weight + " from cache, open queries in connection cache: " + cc.size());
+			}
+		}
+		return cleanedOne;
 	}
 	
 	@Override

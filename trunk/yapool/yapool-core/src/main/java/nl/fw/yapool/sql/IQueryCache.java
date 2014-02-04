@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import nl.fw.yapool.IPool;
 import nl.fw.yapool.IPoolListener;
 
 /**
@@ -18,6 +19,12 @@ import nl.fw.yapool.IPoolListener;
  *
  */
 public interface IQueryCache extends IPoolListener {
+	
+	/**
+	 * Register query cache to listen for connection-close events.
+	 * This method must be called to prevent memory leakage.
+	 */
+	void listen(IPool<?> pool);
 	
 	/**
 	 * Creates a prepared statement for the connection or re-uses one from cache.

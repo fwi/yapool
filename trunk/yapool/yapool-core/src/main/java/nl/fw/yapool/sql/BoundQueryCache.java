@@ -1,23 +1,18 @@
 package nl.fw.yapool.sql;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import nl.fw.yapool.IPool;
-import nl.fw.yapool.PoolEvent;
-import nl.fw.yapool.listener.PoolListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A {@link SimpleQueryCache} that also limits the amount of cached queries (see {@link #setMaxOpen(int)}).
- * To keep relevant queries in cache, a {@link BoundCacheWeight} instance is used.
+ * To keep relevant queries in cache, the {@link CachedStatement#getWeight()} is used.
  * In general, this cache only works properly when:
  * <br> - a LIFO connection queue is used (like {@link SqlPool} does).
  * <br> - idle connections are closed (default 60 seconds in {@link SqlPool}).
@@ -29,20 +24,23 @@ import org.slf4j.LoggerFactory;
  * @author Fred
  *
  */
-public class BoundQueryCache extends PoolListener implements IQueryCache {
+public class BoundQueryCache extends SimpleQueryCache {
 	
 	/** By default, allow a maximum of 200 open queries. */
 	public static final int DEFAULT_MAX_OPEN = 200;
 	
+	/**
+	 * When to remove an under-used cached query.
+	 * A lower factor removes queries faster, a higher factor removes queries slower.
+	 * Default 5 (which removes queries that are missed 5 times more often then the other queries in the connection's cache). 
+	 */
+	public static final int DEFAULT_MIN_WEIGHT_FACTOR = 5;
+
 	protected Logger log = LoggerFactory.getLogger(getClass());
 	
-	protected Map<Connection, Map<String, Object>> qcache = new ConcurrentHashMap<Connection, Map<String, Object>>();
-	protected QueryCacheStats qcacheStats;
-	protected IQueryBuilder qb;
-	protected String poolName = "SqlPool";
-	private int maxOpen;
 	protected final AtomicInteger openQueries = new AtomicInteger();
-	protected BoundCacheWeight weightStats;
+	private int minWeightFactor;
+	private int maxOpen;
 
 	public BoundQueryCache() {
 		this(DEFAULT_MAX_OPEN);
@@ -50,31 +48,124 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 	
 	public BoundQueryCache(int maxOpen) {
 		super();
-		addWantEvent(PoolEvent.DESTROYING);
-		setQueryBuilder(new SimpleQueryBuilder());
-		weightStats = new BoundCacheWeight(this);
 		setMaxOpen(maxOpen);
 	}
 
 	/**
-	 * Set to {@link SimpleQueryBuilder} by default constructor.
+	 * Removes CachedStatement from reference cache and decreases the open queries counter.
 	 */
 	@Override
-	public void setQueryBuilder(IQueryBuilder qb) {
-		this.qb = qb;
-	}
-
-	public IQueryBuilder getQueryBuilder() {
-		return qb;
+	protected void closedQuery(CachedStatement cs) {
+		
+		super.closedQuery(cs);
+		openQueries.decrementAndGet();
 	}
 	
+	/**
+	 * Adds CachedStatement to reference cache and increases the open queries counter.
+	 */
 	@Override
-	public void listen(IPool<?> pool) {
+	protected void createdQuery(CachedStatement cs) {
 		
-		pool.getEvents().addPoolListener(this);
-		poolName = pool.toString();
+		super.createdQuery(cs);
+		openQueries.incrementAndGet();
 	}
 
+	@Override
+	protected CachedStatement getQuery(Connection c, String queryName, boolean named) throws SQLException {
+
+		CachedStatement cs = super.getQuery(c, queryName, named);
+		Map<String, CachedStatement> cc = getConnectionCache(c);
+		addHit(cc, cs);
+		if (openQueries.get() > maxOpen) {
+			if (!closeOneUnused(cc, cs)) {
+				closedQuery(cs); // Just to update counter and remove references.
+				cc.remove(queryName);
+				if (log.isDebugEnabled()) {
+					log.debug("Cache full, cannot add query [" + queryName + "]");
+				}
+			}
+		}
+		return cs;
+	}
+	
+	protected void addHit(Map<String, CachedStatement> cc, CachedStatement csHit) {
+		
+		final int csize = cc.size() + 1;
+		csHit.setWeight(Math.min(csize * csize, csHit.getWeight() + csize));
+		// Decrease weight of other queries, remove if below minWeight.
+		final int minWeight = Math.min(-csize * minWeightFactor,  -5);
+		// Use iterator so that unused queries can be removed on the fly.
+		final Iterator<Entry<String, CachedStatement>> ccEntries =  cc.entrySet().iterator();
+		while (ccEntries.hasNext()) {
+			final CachedStatement csMiss = ccEntries.next().getValue();
+			if (csMiss == csHit) {
+				continue;
+			}
+			csMiss.setWeight(csMiss.getWeight() - 1);
+			if (csMiss.getWeight() < minWeight) {
+				if (log.isDebugEnabled()) {
+					log.debug("Removing query [" + csMiss.getQueryName() + "] from cache (weight below " + minWeight + ")");
+				}
+				csMiss.close();
+				closedQuery(csMiss);
+				ccEntries.remove();
+			}
+		}
+	}
+
+	/**
+	 * Removes one query from cache or all queries with weight less than 1. 
+	 * @param cc The query cache for the connection.
+	 * @param excludeCs The query that must be untouched.
+	 * @return true if one or more queries were removed from cache.
+	 */
+	protected boolean closeOneUnused(Map<String, CachedStatement> cc, CachedStatement excludeCs) {
+		
+		boolean cleanedOne = false;
+		int weight = 0;
+		while (weight < 1) {
+			CachedStatement cs = getLeastRelevant(cc, excludeCs);
+			if (cs == null) {
+				break;
+			}
+			cleanedOne = true;
+			weight = cs.getWeight();
+			cs.close();
+			closedQuery(cs);
+			cc.remove(cs.getQueryName());
+			if (log.isDebugEnabled()) {
+				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache, open queries in connection cache: " + cc.size());
+			}
+		}
+		return cleanedOne;
+	}
+	
+	/**
+	 * Called when cache is full but a new query needs to be added to the cache.
+	 * This function can be called in a loop when there are many cached queries with a weight of zero or less.
+	 */
+	protected CachedStatement getLeastRelevant(Map<String, CachedStatement> cc, CachedStatement excludeCs) {
+		
+		if (cc.size() < 2) {
+			return null;
+		}
+		CachedStatement lowest = null;
+		int lowestWeight = Integer.MAX_VALUE;
+		for (CachedStatement cs : cc.values()) {
+			if (cs == excludeCs) {
+				continue;
+			}
+			if (cs.getWeight() < lowestWeight) {
+				lowestWeight = cs.getWeight();
+				lowest = cs;
+			}
+		}
+		return lowest;
+	}
+
+	/* *** BEAN METHODS *** */
+	
 	public int getMaxOpen() {
 		return maxOpen;
 	}
@@ -89,203 +180,19 @@ public class BoundQueryCache extends PoolListener implements IQueryCache {
 		}
 	}
 
-	/**
-	 * Closes (named) prepared statements related to a connection that gets event {@link PoolEvent#DESTROYING}
-	 */
-	@Override
-	public void onPoolEvent(PoolEvent poolEvent) {
-		
-		if (poolEvent.getAction() == PoolEvent.DESTROYING) {
-			Map<String, Object> cc = qcache.get(poolEvent.getResource());
-			if (cc != null) {
-				if (log.isDebugEnabled()) {
-					log.debug("Closing " + cc.size() + " cached queries for a database connection that is about to be destroyed.");
-				}
-				for (String sqlId : cc.keySet()) {
-					closeQuery(sqlId, cc.get(sqlId));
-				}
-				cc.clear();
-				qcache.remove(poolEvent.getResource());
-			}
-		}
+	public int getMinWeightFactor() {
+		return minWeightFactor;
 	}
 	
-	/**
-	 * Closes the PreparedStatement / NamedParameterStatement and catches any errors.
-	 * <br>Decreases the {@link #openQueries} count and removes the query from {@link #weightStats}.
-	 * @param queryName the name/ID associated with the statement.
-	 * @param o the statement
-	 */
-	protected void closeQuery(String queryName, Object o) {
-		
-		if (o instanceof PreparedStatement) {
-			DbConn.close(((PreparedStatement)o));
-			openQueries.decrementAndGet();
-		} else if (o instanceof NamedParameterStatement) {
-			DbConn.close(((NamedParameterStatement)o));
-			openQueries.decrementAndGet();
-		} else {
-			DbConn.closeLogger.warn("Cannot close unknown type of statement named " + queryName + ", statement: " + o);
-		}
-		weightStats.remove(o);
-	}
-	
-	/**
-	 * Returns the map containing the cached statements for the given connection.
-	 * Creates a map if needed.
-	 */
-	protected Map<String, Object> getConnectionCache(Connection c) {
-		
-		Map<String, Object> cc = qcache.get(c);
-		if (cc == null) {
-			/*
-			 * No need to use a concurrent hash-map for "cc":
-			 * a connection can only be used by 1 thread at a given time.
-			 */
-			qcache.put(c, cc = new HashMap<String, Object>());
-		}
-		return cc;
-	}
-
-	@Override
-	public PreparedStatement getQuery(Connection c, String queryName) throws SQLException {
-		
-		return (PreparedStatement) getQuery(c, queryName, false);
-	}
-
-	@Override
-	public NamedParameterStatement getNamedQuery(Connection c, String queryName) throws SQLException {
-
-		return (NamedParameterStatement) getQuery(c, queryName, true);
-	}
-
-	public Object getQuery(Connection c, String queryName, boolean named) throws SQLException {
-		
-		Map<String, Object> cc = getConnectionCache(c);
-		Object o = cc.get(queryName);
-		if (o != null) {
-			boolean closed = false;
-			if (named) {
-				closed = ((NamedParameterStatement)o).getStatement().isClosed();
-			} else {
-				closed = ((PreparedStatement)o).isClosed();
-			}
-			if (closed) {
-				cc.remove(o);
-				openQueries.decrementAndGet();
-				weightStats.remove(o);
-				o = null;
-				DbConn.closeLogger.warn("Cached " + (named ? "named" : "") + " prepared statement [" + queryName 
-						+ "] removed from query cache because it was closed.");
-			}
-		}
-		if (o == null) {
-			if (qcacheStats != null) {
-				qcacheStats.addMiss(queryName);
-			}
-			if (named) {
-				o = qb.createNamedQuery(c, queryName);
-			} else {
-				o = qb.createQuery(c, queryName);
-			}
-			if (o == null) {
-				throw new RuntimeException("Could not create a prepared statement for query name " + queryName);
-			}
-			openQueries.incrementAndGet();
-			cc.put(queryName, o);
-		} else {
-			if (qcacheStats != null) {
-				qcacheStats.addHit(queryName);
-			}
-		}
-		weightStats.addHit(o, cc);
-		if (openQueries.get() > maxOpen) {
-			if (!cleanOpen(cc, queryName)) {
-				cc.remove(queryName);
-				weightStats.remove(o);
-				openQueries.decrementAndGet();
-				if (log.isDebugEnabled()) {
-					log.debug("Cache full, cannot add query [" + queryName + "]");
-				}
-			}
-		}
-		return o;
-	}
-	
-	/**
-	 * Removes one query from cache or all queries with weight 0. 
-	 * @param cc The query cache for the connection.
-	 * @param excludeQueryName The query name that must be untouched.
-	 * @return true if one or more queries were removed from cache.
-	 */
-	protected boolean cleanOpen(Map<String, Object> cc, String excludeQueryName) {
-		
-		boolean cleanedOne = false;
-		int weight = 0;
-		while (weight == 0) {
-			String qname = weightStats.getLeastRelevant(cc, excludeQueryName);
-			if (qname == null) {
-				break;
-			}
-			cleanedOne = true;
-			weight = weightStats.getWeight(cc.get(qname));
-			closeQuery(qname, cc.remove(qname));
-			if (log.isDebugEnabled()) {
-				log.debug("Removed query [" + qname + "] with weight " + weight + " from cache, open queries in connection cache: " + cc.size());
-			}
-		}
-		return cleanedOne;
-	}
-	
-	@Override
-	public boolean isCached(Connection c, Object statement) {
-		Map<String, Object> cc = qcache.get(c);
-		return (cc == null ? false : cc.containsValue(statement));
-	}
 
 	/**
-	 * If set to non-null, query statistics are maintained.
-	 */
-	public void setStats(QueryCacheStats qcacheStats) {
-		this.qcacheStats = qcacheStats;
-	}
-	
-	public QueryCacheStats getStats() {
-		return qcacheStats;
-	}
-	
-	/**
-	 * Sets the minimum weight factor used by this cache's {@link BoundCacheWeight}.
-	 * See also {@link BoundCacheWeight#DEFAULT_MIN_WEIGHT_FACTOR}.
-	 * 
-	 * @return
+	 * Sets the minimum weight factor.
+	 * See also {@link #DEFAULT_MIN_WEIGHT_FACTOR}.
 	 */
 	public void setMinWeightFactor(int minWeightFactor) {
-		weightStats.setMinWeightFactor(minWeightFactor);
-	}
-	
-	public int getMinWeightFactor() {
-		return weightStats.getMinWeightFactor();
-	}
-	
-	@Override
-	public String toString() {
-		
-		int qcacheSize = 0;
-		int cachedQueries = 0;
-		for (Connection c : qcache.keySet()) {
-			Map<String, Object> cc = qcache.get(c);
-			if (cc != null) {
-				qcacheSize++;
-				cachedQueries += cc.size();
-			}
+		if (minWeightFactor > 0) {
+			this.minWeightFactor = minWeightFactor;
 		}
-		StringBuilder sb = new StringBuilder();
-		sb.append(this.getClass().getSimpleName()).append(" Query cache for pool ").append(poolName)
-		.append(" caching queries for ").append(qcacheSize).append(" connections containing ")
-		.append(cachedQueries).append(" cached queries.");
-		sb.append(" Weight calculated for ").append(weightStats.size()).append(" cached queries.");
-		return sb.toString();
 	}
-
+	
 }

@@ -292,13 +292,13 @@ public class DbConn {
 			st = null; 
 		}
 		if (ps != null) { 
-			if (qc == null || !qc.isCached(conn, ps)) {
+			if (qc == null || !qc.isCached(ps)) {
 				close(ps); 
 			}
 			ps = null; 
 		}
 		if (nps != null) { 
-			if (qc == null  || !qc.isCached(conn, nps)) { 
+			if (qc == null  || !qc.isCached(nps)) { 
 				close(nps); 
 			}
 			nps = null; 

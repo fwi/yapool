@@ -43,5 +43,5 @@ public interface IQueryCache extends IPoolListener {
 	/**
 	 * Returns true if the (named) prepared statement is cached.
 	 */
-	boolean isCached(Connection c, Object statement);
+	boolean isCached(Object statement);
 }

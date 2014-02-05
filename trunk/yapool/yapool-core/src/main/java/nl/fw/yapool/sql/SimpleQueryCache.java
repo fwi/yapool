@@ -23,17 +23,22 @@ import org.slf4j.LoggerFactory;
 public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	
 	protected Logger log = LoggerFactory.getLogger(getClass());
-	protected Map<Connection, Map<String, Object>> qcache = new ConcurrentHashMap<Connection, Map<String, Object>>();
+
+	protected Map<Connection, Map<String, CachedStatement>> qcache;
+	protected Map<Object, CachedStatement> qcacheRef;
+
 	protected QueryCacheStats qcacheStats;
 	protected IQueryBuilder qb;
 	protected String poolName = "SqlPool";
-	
+
 	public SimpleQueryCache() {
 		super();
+		qcache = new ConcurrentHashMap<Connection, Map<String, CachedStatement>>();
+		qcacheRef = new ConcurrentHashMap<Object, CachedStatement>();
 		addWantEvent(PoolEvent.DESTROYING);
 		setQueryBuilder(new SimpleQueryBuilder());
 	}
-	
+
 	/**
 	 * Set to {@link SimpleQueryBuilder} by default constructor.
 	 */
@@ -44,124 +49,6 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 
 	public IQueryBuilder getQueryBuilder() {
 		return qb;
-	}
-	
-	@Override
-	public void listen(IPool<?> pool) {
-		
-		pool.getEvents().addPoolListener(this);
-		poolName = pool.toString();
-	}
-
-	/**
-	 * Closes (named) prepared statements related to a connection that gets event {@link PoolEvent#DESTROYING}
-	 */
-	@Override
-	public void onPoolEvent(PoolEvent poolEvent) {
-		
-		if (poolEvent.getAction() == PoolEvent.DESTROYING) {
-			Map<String, Object> cc = qcache.get(poolEvent.getResource());
-			if (cc != null) {
-				if (log.isDebugEnabled()) {
-					log.debug("Closing " + cc.size() + " cached queries for a database connection that is about to be destroyed.");
-				}
-				for (String sqlId : cc.keySet()) {
-					closeQuery(sqlId, cc.get(sqlId));
-				}
-				cc.clear();
-				qcache.remove(poolEvent.getResource());
-			}
-		}
-	}
-	
-	/**
-	 * Closes the PreparedStatement / NamedParameterStatement and catches any errors.
-	 * @param queryName the name/ID associated with the statement.
-	 * @param o the statement
-	 */
-	protected void closeQuery(String queryName, Object o) {
-		
-		if (o instanceof PreparedStatement) {
-			DbConn.close(((PreparedStatement)o));
-		} else if (o instanceof NamedParameterStatement) {
-			DbConn.close(((NamedParameterStatement)o));
-		} else {
-			DbConn.closeLogger.warn("Cannot close unknown type of statement named " + queryName + ", statement: " + o);
-		}
-	}
-	
-	/**
-	 * Returns the map containing the cached statements for the given connection.
-	 * Creates a map if needed.
-	 */
-	protected Map<String, Object> getConnectionCache(Connection c) {
-		
-		Map<String, Object> cc = qcache.get(c);
-		if (cc == null) {
-			/*
-			 * No need to use a concurrent hash-map for "cc":
-			 * a connection can only be used by 1 thread at a given time.
-			 */
-			qcache.put(c, cc = new HashMap<String, Object>());
-		}
-		return cc;
-	}
-
-	@Override
-	public PreparedStatement getQuery(Connection c, String queryName) throws SQLException {
-		
-		return (PreparedStatement) getQuery(c, queryName, false);
-	}
-
-	@Override
-	public NamedParameterStatement getNamedQuery(Connection c, String queryName) throws SQLException {
-
-		return (NamedParameterStatement) getQuery(c, queryName, true);
-	}
-
-	public Object getQuery(Connection c, String queryName, boolean named) throws SQLException {
-		
-		Map<String, Object> cc = getConnectionCache(c);
-		Object o = cc.get(queryName);
-		if (o != null) {
-			boolean closed = false;
-			if (named) {
-				closed = ((NamedParameterStatement)o).getStatement().isClosed();
-			} else {
-				closed = ((PreparedStatement)o).isClosed();
-			}
-			if (closed) {
-				cc.remove(o);
-				o = null;
-				DbConn.closeLogger.warn("Cached " + (named ? "named" : "") + " prepared statement [" + queryName 
-						+ "] removed from query cache because it was closed.");
-			}
-		}
-		if (o == null) {
-			if (qcacheStats != null) {
-				qcacheStats.addMiss(queryName);
-			}
-			if (named) {
-				o = qb.createNamedQuery(c, queryName);
-			} else {
-				o = qb.createQuery(c, queryName);
-			}
-			if (o == null) {
-				throw new RuntimeException("Could not create a prepared statement for query name " + queryName);
-			}
-			cc.put(queryName, o);
-		} else {
-			if (qcacheStats != null) {
-				qcacheStats.addHit(queryName);
-			}
-		}
-		return o;
-	}
-	
-	@Override
-	public boolean isCached(Connection c, Object statement) {
-		Map<String, Object> cc = qcache.get(c);
-		return (cc == null ? false : cc.containsValue(statement));
 	}
 
 	/**
@@ -176,12 +63,128 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	}
 	
 	@Override
+	public void listen(IPool<?> pool) {
+		
+		pool.getEvents().addPoolListener(this);
+		poolName = pool.toString();
+	}
+
+	@Override
+	public boolean isCached(Object statement) {
+		return (qcacheRef.containsKey(statement));
+	}
+
+	/**
+	 * Closes (named) prepared statements related to a connection that gets event {@link PoolEvent#DESTROYING}
+	 */
+	@Override
+	public void onPoolEvent(PoolEvent poolEvent) {
+		
+		if (poolEvent.getAction() == PoolEvent.DESTROYING) {
+			Map<String, CachedStatement> cc = qcache.get(poolEvent.getResource());
+			if (cc != null) {
+				if (log.isDebugEnabled()) {
+					log.debug("Closing " + cc.size() + " cached queries for a database connection that is about to be destroyed.");
+				}
+				for (CachedStatement cs : cc.values()) {
+					cs.close();
+					closedQuery(cs);
+				}
+				cc.clear();
+				qcache.remove(poolEvent.getResource());
+			}
+		}
+	}
+
+	/**
+	 * Removes CachedStatement from reference cache.
+	 */
+	protected void closedQuery(CachedStatement cs) {
+		
+		if (cs.getPs() != null) {
+			qcacheRef.remove(cs.getPs());
+		} else {
+			qcacheRef.remove(cs.getNps());
+		}
+	}
+	
+	/**
+	 * Adds CachedStatement to reference cache.
+	 */
+	protected void createdQuery(CachedStatement cs) {
+		
+		if (cs.getPs() != null) {
+			qcacheRef.put(cs.getPs(), cs);
+		} else {
+			qcacheRef.put(cs.getNps(), cs);
+		}
+	}
+
+	/**
+	 * Returns the map containing the cached statements for the given connection.
+	 * Creates a map if needed.
+	 */
+	protected Map<String, CachedStatement> getConnectionCache(Connection c) {
+		
+		Map<String, CachedStatement> cc = qcache.get(c);
+		if (cc == null) {
+			/*
+			 * No need to use a concurrent hash-map for "cc":
+			 * a connection can only be used by 1 thread at a given time.
+			 */
+			qcache.put(c, cc = new HashMap<String, CachedStatement>());
+		}
+		return cc;
+	}
+
+	@Override
+	public PreparedStatement getQuery(Connection c, String queryName) throws SQLException {
+		
+		return getQuery(c, queryName, false).getPs();
+	}
+
+	@Override
+	public NamedParameterStatement getNamedQuery(Connection c, String queryName) throws SQLException {
+
+		return getQuery(c, queryName, true).getNps();
+	}
+
+	protected CachedStatement getQuery(Connection c, String queryName, boolean named) throws SQLException {
+		
+		Map<String, CachedStatement> cc = getConnectionCache(c);
+		CachedStatement cs = cc.get(queryName);
+		if (cs != null && cs.isClosed()) {
+			closedQuery(cs);
+			cc.remove(queryName);
+			DbConn.closeLogger.warn("Removed query from cache that was closed outside cache: " + cs);
+			cs = null;
+		}
+		if (cs == null) {
+			if (qcacheStats != null) {
+				qcacheStats.addMiss(queryName);
+			}
+			if (named) {
+				cs = new CachedStatement(c, queryName,  qb.createNamedQuery(c, queryName));
+			} else {
+				cs = new CachedStatement(c, queryName,  qb.createQuery(c, queryName));
+			}
+			createdQuery(cs);
+			cc.put(queryName, cs);
+		} else {
+			if (qcacheStats != null) {
+				qcacheStats.addHit(queryName);
+			}
+		}
+		return cs;
+	}
+
+	@Override
 	public String toString() {
 		
 		int qcacheSize = 0;
 		int cachedQueries = 0;
 		for (Connection c : qcache.keySet()) {
-			Map<String, Object> cc = qcache.get(c);
+			Map<String, CachedStatement> cc = qcache.get(c);
 			if (cc != null) {
 				qcacheSize++;
 				cachedQueries += cc.size();

@@ -43,12 +43,17 @@ public class BoundQueryCache extends SimpleQueryCache {
 	private int maxOpen;
 
 	public BoundQueryCache() {
-		this(DEFAULT_MAX_OPEN);
+		this(DEFAULT_MAX_OPEN, DEFAULT_MIN_WEIGHT_FACTOR);
 	}
-	
+
 	public BoundQueryCache(int maxOpen) {
+		this(maxOpen, DEFAULT_MIN_WEIGHT_FACTOR);
+	}
+
+	public BoundQueryCache(int maxOpen, int minWeightFactor) {
 		super();
 		setMaxOpen(maxOpen);
+		setMinWeightFactor(minWeightFactor);
 	}
 
 	/**
@@ -135,7 +140,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 			closedQuery(cs);
 			cc.remove(cs.getQueryName());
 			if (log.isDebugEnabled()) {
-				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache, open queries in connection cache: " + cc.size());
+				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache [" +cc.hashCode() + "], open queries in connection cache: " + cc.size());
 			}
 		}
 		return cleanedOne;

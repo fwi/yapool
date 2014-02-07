@@ -149,6 +149,9 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 		return getQuery(c, queryName, true).getNps();
 	}
 
+	/**
+	 * Gets a (named) prepared statement from cache.
+	 */
 	protected CachedStatement getQuery(Connection c, String queryName, boolean named) throws SQLException {
 		
 		Map<String, CachedStatement> cc = getConnectionCache(c);

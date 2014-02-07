@@ -87,7 +87,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 				closedQuery(cs); // Just to update counter and remove references.
 				cc.remove(queryName);
 				if (log.isDebugEnabled()) {
-					log.debug("Cache full, cannot add query [" + queryName + "] to cache [" + cc.hashCode() + "]");
+					log.debug("Cache full, cannot add query [" + queryName + "] to cache [" + getConnectionHash(cs) + "]");
 				}
 			}
 		}
@@ -110,7 +110,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 			csMiss.setWeight(csMiss.getWeight() - 1);
 			if (csMiss.getWeight() < minWeight) {
 				if (log.isDebugEnabled()) {
-					log.debug("Removing query [" + csMiss.getQueryName() + "] from cache [" + cc.hashCode() + "] (weight below " + minWeight + ")");
+					log.debug("Removing query [" + csMiss.getQueryName() + "] from cache [" + getConnectionHash(csMiss) + "] (weight below " + minWeight + ")");
 				}
 				csMiss.close();
 				closedQuery(csMiss);
@@ -138,7 +138,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 			closedQuery(cs);
 			cc.remove(cs.getQueryName());
 			if (log.isDebugEnabled()) {
-				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache [" + cc.hashCode() + "], open queries in connection cache: " + cc.size());
+				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache [" + getConnectionHash(cs) + "], open queries in connection cache: " + cc.size());
 			}
 		}
 		return cleanedOne;
@@ -162,6 +162,15 @@ public class BoundQueryCache extends SimpleQueryCache {
 			}
 		}
 		return lowest;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	protected String getConnectionHash(CachedStatement cs) {
+		return Integer.toString(cs.getConnection().hashCode());
+		
 	}
 
 	/* *** BEAN METHODS *** */

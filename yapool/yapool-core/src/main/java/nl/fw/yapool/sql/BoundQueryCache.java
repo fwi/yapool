@@ -83,11 +83,11 @@ public class BoundQueryCache extends SimpleQueryCache {
 		Map<String, CachedStatement> cc = getConnectionCache(c);
 		addHit(cc, cs);
 		if (openQueries.get() > maxOpen) {
-			if (!closeOneUnused(cc, cs)) {
+			if (!closeOneAndUnderUsed(cc, cs)) {
 				closedQuery(cs); // Just to update counter and remove references.
 				cc.remove(queryName);
 				if (log.isDebugEnabled()) {
-					log.debug("Cache full, cannot add query [" + queryName + "]");
+					log.debug("Cache full, cannot add query [" + queryName + "] to cache [" + cc.hashCode() + "]");
 				}
 			}
 		}
@@ -110,7 +110,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 			csMiss.setWeight(csMiss.getWeight() - 1);
 			if (csMiss.getWeight() < minWeight) {
 				if (log.isDebugEnabled()) {
-					log.debug("Removing query [" + csMiss.getQueryName() + "] from cache (weight below " + minWeight + ")");
+					log.debug("Removing query [" + csMiss.getQueryName() + "] from cache [" + cc.hashCode() + "] (weight below " + minWeight + ")");
 				}
 				csMiss.close();
 				closedQuery(csMiss);
@@ -125,7 +125,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 	 * @param excludeCs The query that must be untouched.
 	 * @return true if one or more queries were removed from cache.
 	 */
-	protected boolean closeOneUnused(Map<String, CachedStatement> cc, CachedStatement excludeCs) {
+	protected boolean closeOneAndUnderUsed(Map<String, CachedStatement> cc, CachedStatement excludeCs) {
 		
 		boolean cleanedOne = false;
 		while (true) {
@@ -138,7 +138,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 			closedQuery(cs);
 			cc.remove(cs.getQueryName());
 			if (log.isDebugEnabled()) {
-				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache [" +cc.hashCode() + "], open queries in connection cache: " + cc.size());
+				log.debug("Removed query [" + cs.getQueryName() + "] with weight " + cs.getWeight() + " from cache [" + cc.hashCode() + "], open queries in connection cache: " + cc.size());
 			}
 		}
 		return cleanedOne;
@@ -147,15 +147,9 @@ public class BoundQueryCache extends SimpleQueryCache {
 	/**
 	 * Called when cache is full but a new query needs to be added to the cache.
 	 * This function can be called in a loop when there are many cached queries with a weight of zero or less.
-	 * <br>If cache size is less than 2, nothing is done (null is returned). This is because the one query in cache,
-	 * will be removed by {@link #getQuery(Connection, String, Boolean)} itself when cache-size 
-	 * does not go below {@link #maxOpen}.
 	 */
 	protected CachedStatement getLeastRelevant(Map<String, CachedStatement> cc, CachedStatement excludeCs) {
 		
-		if (cc.size() < 2) {
-			return null;
-		}
 		CachedStatement lowest = null;
 		int lowestWeight = Integer.MAX_VALUE;
 		for (CachedStatement cs : cc.values()) {

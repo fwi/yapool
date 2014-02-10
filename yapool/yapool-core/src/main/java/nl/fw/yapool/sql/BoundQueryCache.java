@@ -166,8 +166,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 	}
 	
 	/**
-	 * 
-	 * @return
+	 * Returns connection's hashCode in string format.
 	 */
 	protected String getConnectionHash(CachedStatement cs) {
 		return Integer.toString(cs.getConnection().hashCode());

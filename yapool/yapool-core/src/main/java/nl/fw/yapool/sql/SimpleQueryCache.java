@@ -3,6 +3,7 @@ package nl.fw.yapool.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,8 +71,35 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 	}
 
 	@Override
-	public boolean isCached(Object statement) {
+	public boolean isCached(Statement statement) {
 		return (qcacheRef.containsKey(statement));
+	}
+
+	@Override
+	public boolean isCached(NamedParameterStatement nps) {
+		return (qcacheRef.containsKey(nps));
+	}
+	
+	@Override
+	public void close(Statement st) {
+
+		CachedStatement cs = qcacheRef.get(st);
+		if (cs == null) {
+			DbConn.close(st);
+		} else {
+			cs.setInUse(false);
+		}
+	}
+
+	@Override
+	public void close(NamedParameterStatement nps) {
+		
+		CachedStatement cs = qcacheRef.get(nps);
+		if (cs == null) {
+			DbConn.close(nps);
+		} else {
+			cs.setInUse(false);
+		}
 	}
 
 	/**
@@ -174,6 +202,7 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 			createdQuery(cs);
 			cc.put(queryName, cs);
 		} else {
+			cs.setInUse(true);
 			if (qcacheStats != null) {
 				qcacheStats.addHit(queryName);
 			}

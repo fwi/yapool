@@ -12,6 +12,7 @@ public class CachedStatement {
 
 	private final Connection c;
 	private final String queryName;
+	private boolean inUse;
 	
 	private final PreparedStatement ps;
 	private final NamedParameterStatement nps;
@@ -23,6 +24,7 @@ public class CachedStatement {
 		this.queryName = queryName;
 		this.ps = ps;
 		this.nps = null;
+		setInUse(true);
 	}
 	
 	public CachedStatement(Connection c, String queryName, NamedParameterStatement nps) {
@@ -30,12 +32,15 @@ public class CachedStatement {
 		this.queryName = queryName;
 		this.ps = null;
 		this.nps = nps;
+		setInUse(true);
 	}
-
 	
 	public Connection getConnection() { return c; }
 	public String getQueryName() { return queryName; }
 	
+	public boolean isInUse() { return inUse; }
+	public void setInUse(boolean inUse) { this.inUse = inUse; }
+
 	public PreparedStatement getPs() { return ps; }
 	public NamedParameterStatement getNps() { return nps; }
 
@@ -84,4 +89,5 @@ public class CachedStatement {
 		.append("[").append(getQueryName()).append("] with weight ").append(getWeight());
 		return sb.toString();
 	}
+
 }

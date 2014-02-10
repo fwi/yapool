@@ -3,6 +3,7 @@ package nl.fw.yapool.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import nl.fw.yapool.IPool;
 import nl.fw.yapool.IPoolListener;
@@ -43,5 +44,22 @@ public interface IQueryCache extends IPoolListener {
 	/**
 	 * Returns true if the (named) prepared statement is cached.
 	 */
-	boolean isCached(Object statement);
+	boolean isCached(Statement statement);
+
+	/**
+	 * Same as {@link #isCached(Statement)}.
+	 */
+	boolean isCached(NamedParameterStatement nps);
+	
+	/**
+	 * Closes the statement if it is not in the cache.
+	 * Else marks the statement as "no longer in use".
+	 */
+	void close(Statement st);
+	
+	/**
+	 * Same as {@link #close(Statement)}.
+	 * @param nps
+	 */
+	void close(NamedParameterStatement nps);
 }

@@ -101,7 +101,7 @@ public class BoundQueryCache extends SimpleQueryCache {
 		final int csize = cc.size() + 1;
 		csHit.setWeight(Math.min(csize * csize, csHit.getWeight() + csize));
 		// Decrease weight of other queries, remove if below minWeight.
-		final int minWeight = Math.min(-csize * minWeightFactor,  -minWeightFactor);
+		final int minWeight = Math.min(-csize * minWeightFactor, -minWeightFactor);
 		// Use iterator so that unused queries can be removed on the fly.
 		final Iterator<Entry<String, CachedStatement>> ccEntries =  cc.entrySet().iterator();
 		while (ccEntries.hasNext()) {

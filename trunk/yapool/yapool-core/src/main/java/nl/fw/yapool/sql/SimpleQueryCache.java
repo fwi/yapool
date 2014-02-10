@@ -199,6 +199,7 @@ public class SimpleQueryCache extends PoolListener implements IQueryCache {
 			} else {
 				cs = new CachedStatement(c, queryName,  qb.createQuery(c, queryName));
 			}
+			// New cached statements are always set to "in use".
 			createdQuery(cs);
 			cc.put(queryName, cs);
 		} else {

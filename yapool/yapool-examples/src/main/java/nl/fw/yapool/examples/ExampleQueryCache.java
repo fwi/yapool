@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import nl.fw.yapool.sql.BoundQueryCache;
 import nl.fw.yapool.sql.DbConn;
 import nl.fw.yapool.sql.QueryCacheStats;
 import nl.fw.yapool.sql.SimpleQueryBuilder;
-import nl.fw.yapool.sql.SimpleQueryCache;
 import nl.fw.yapool.sql.SqlFactory;
 import nl.fw.yapool.sql.SqlPool;
 
@@ -24,44 +24,44 @@ import org.slf4j.LoggerFactory;
  * initializing a database, preparing and using a query cache 
  * and executing an on-the-fly created select-query with multiple 'in' values.
  * <br>The example has the following output: <pre>{@literal
-38:50:073 [main] INFO yapool.example.qcache - Starting ExampleQueryCache
-2013-11-10 16:38:50.443 1 INSERT INTO SYSTEM_LOBS.BLOCKS VALUES(?,?,?) (0,2147483647,0)
-2013-11-10 16:38:50.444 1 COMMIT 
-38:50:451 [main] INFO yapool.example.qcache - Executing statements loaded from example-qc-struct.sql
-2013-11-10 16:38:50.455 2 create table t 
+46:17:450 [main] INFO yapool.example.qcache - Starting ExampleQueryCache
+2014-02-19 15:46:17.843 1 INSERT INTO SYSTEM_LOBS.BLOCKS VALUES(?,?,?) (0,2147483647,0)
+2014-02-19 15:46:17.844 1 COMMIT 
+46:17:851 [main] INFO yapool.example.qcache - Executing statements loaded from example-qc-struct.sql
+2014-02-19 15:46:17.855 2 create table t 
 (id integer generated always as identity(start with 100) primary key, 
 name varchar(256)) 
-2013-11-10 16:38:50.455 2 COMMIT 
-38:50:455 [main] INFO yapool.example.qcache - Executing statements loaded from example-qc-data.sql
-2013-11-10 16:38:50.456 2 insert into t (name) values ('Donald Duck') 
-2013-11-10 16:38:50.456 2 insert into t (name) values ('Mickey Mouse') 
-2013-11-10 16:38:50.456 2 insert into t (name) values ('Marvin the Martian') 
-2013-11-10 16:38:50.457 2 insert into t (name) values ('Woody Pride') 
-2013-11-10 16:38:50.457 2 insert into t (name) values ('Buzz Lightyear') 
-2013-11-10 16:38:50.457 2 insert into t (name) values ('Jessica Jane Pride') 
-2013-11-10 16:38:50.457 2 COMMIT 
-38:50:457 [main] INFO yapool.example.qcache - Loading queries from example-qc-queries.sql
-2013-11-10 16:38:50.467 2 select id from t where name like ? ('%Pride')
-38:50:471 [main] INFO yapool.example.qcache - Query cache statistics:
+2014-02-19 15:46:17.855 2 COMMIT 
+46:17:855 [main] INFO yapool.example.qcache - Executing statements loaded from example-qc-data.sql
+2014-02-19 15:46:17.856 2 insert into t (name) values ('Donald Duck') 
+2014-02-19 15:46:17.856 2 insert into t (name) values ('Mickey Mouse') 
+2014-02-19 15:46:17.856 2 insert into t (name) values ('Marvin the Martian') 
+2014-02-19 15:46:17.857 2 insert into t (name) values ('Woody Pride') 
+2014-02-19 15:46:17.857 2 insert into t (name) values ('Buzz Lightyear') 
+2014-02-19 15:46:17.857 2 insert into t (name) values ('Jessica Jane Pride') 
+2014-02-19 15:46:17.857 2 COMMIT 
+46:17:857 [main] INFO yapool.example.qcache - Loading queries from example-qc-queries.sql
+2014-02-19 15:46:17.867 2 select id from t where name like ? ('%Pride')
+46:17:872 [main] INFO yapool.example.qcache - Query cache statistics:
 Queries in cache: 1
 Percentage hits: 0%
 SELECT_ID
 Misses: 1, hits: 0
-2013-11-10 16:38:50.472 2 select name from t where id = ? (103)
-2013-11-10 16:38:50.472 2 select name from t where id = ? (105)
-38:50:472 [main] INFO yapool.example.qcache - Query cache statistics:
+2014-02-19 15:46:17.872 2 select name from t where id = ? (103)
+2014-02-19 15:46:17.873 2 select name from t where id = ? (105)
+46:17:873 [main] INFO yapool.example.qcache - Query cache statistics:
 Queries in cache: 2
 Percentage hits: 33% (1 hits out of 3)
 SELECT_ID
 Misses: 1, hits: 0
 SELECT_NAME
 Misses: 1, hits: 1
-2013-11-10 16:38:50.473 2 insert into t (name) values (?) ('Huey Duck')
-2013-11-10 16:38:50.473 2 insert into t (name) values (?) ('Dewey Duck')
-2013-11-10 16:38:50.473 2 insert into t (name) values (?) ('Louie Duck')
-2013-11-10 16:38:50.473 2 COMMIT 
-38:50:473 [main] INFO yapool.example.qcache - Nephew IDs: [106, 107, 108]
-38:50:473 [main] INFO yapool.example.qcache - Query cache statistics:
+2014-02-19 15:46:17.873 2 insert into t (name) values (?) ('Huey Duck')
+2014-02-19 15:46:17.873 2 insert into t (name) values (?) ('Dewey Duck')
+2014-02-19 15:46:17.873 2 insert into t (name) values (?) ('Louie Duck')
+2014-02-19 15:46:17.873 2 COMMIT 
+46:17:874 [main] INFO yapool.example.qcache - Nephew IDs: [106, 107, 108]
+46:17:874 [main] INFO yapool.example.qcache - Query cache statistics:
 Queries in cache: 3
 Percentage hits: 50% (3 hits out of 6)
 INSERT_NAME
@@ -70,13 +70,15 @@ SELECT_ID
 Misses: 1, hits: 0
 SELECT_NAME
 Misses: 1, hits: 1
-38:50:473 [main] INFO yapool.example.qcache - SimpleQueryCache Query cache for pool QCExample caching queries for 1 connections containing 3 cached queries.
-2013-11-10 16:38:50.481 2 select name from t where id in (?,?,?) (106,107,108)
-38:50:481 [main] INFO yapool.example.qcache - Nephew names: [Huey Duck, Dewey Duck, Louie Duck]
-2013-11-10 16:38:50.483 2 ROLLBACK 
-2013-11-10 16:38:50.483 2 ROLLBACK 
-38:50:484 [main] INFO yapool.example.qcache - Query cache size: SimpleQueryCache Query cache for pool QCExample caching queries for 0 connections containing 0 cached queries.
-38:50:484 [main] INFO yapool.example.qcache - Finished ExampleQueryCache
+46:17:874 [main] INFO yapool.example.qcache - BoundQueryCache Query cache for pool QCExample caching queries for 1 connections containing 3 cached queries.
+2014-02-19 15:46:17.880 2 select name from t where id in (?,?,?) (106,107,108)
+46:17:881 [main] INFO yapool.example.qcache - Nephew names: [Huey Duck, Dewey Duck, Louie Duck]
+2014-02-19 15:46:17.883 2 ROLLBACK 
+2014-02-19 15:46:17.883 2 ROLLBACK 
+2014-02-19 15:46:17.883 0 ROLLBACK 
+2014-02-19 15:46:17.884 1 ROLLBACK 
+46:17:896 [main] INFO yapool.example.qcache - Query cache size: BoundQueryCache Query cache for pool QCExample caching queries for 0 connections containing 0 cached queries.
+46:17:896 [main] INFO yapool.example.qcache - Finished ExampleQueryCache
 }</pre>
  * 
  * @author Fred
@@ -120,7 +122,7 @@ public class ExampleQueryCache {
 		pool.open();
 		
 		// Prepare a query cache to be used with named queries.
-		SimpleQueryCache qc = new SimpleQueryCache();
+		BoundQueryCache qc = new BoundQueryCache();
 		
 		// Important: register QueryCache with pool-listener.
 		// This ensures that when a connection is closed, cached queries for the connection are cleaned up.

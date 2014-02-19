@@ -8,11 +8,6 @@ import java.sql.Statement;
 import nl.fw.yapool.PoolPruner;
 import nl.fw.yapool.listener.PoolEventLogger;
 import nl.fw.yapool.listener.PoolPerformance;
-import nl.fw.yapool.sql.DbConn;
-import nl.fw.yapool.sql.QueryCacheStats;
-import nl.fw.yapool.sql.SimpleQueryCache;
-import nl.fw.yapool.sql.SqlFactory;
-import nl.fw.yapool.sql.SqlPool;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -86,7 +81,7 @@ public class TestDbPools {
 		DbTask.querySearchKeySize = 3;
 		//DbConn db = null;
 		DbTask[] tasks = new DbTask[taskCount];
-		SimpleQueryCache qcache = new SimpleQueryCache();
+		BoundQueryCache qcache = new BoundQueryCache();
 		qcache.setStats(new QueryCacheStats());
 		qcache.setQueryBuilder(new TestQueryBuilder());
 		PoolPerformance pstats = null;

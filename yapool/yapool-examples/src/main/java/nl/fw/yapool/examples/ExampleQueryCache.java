@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 /**
  * An advanced example demonstrating the use of cached queries.
  * Cached queries can reduce database network traffic by a significant amount.
- * {@link DbConn} can recognize cached queries and does not close them (which is required
- * when cached queries are to be re-used).
+ * {@link DbConn} can recognize cached queries and delegates closing the query to the query cache
+ * (which is required when cached queries are to be re-used).
  * <br>This example demonstrates loading statements from files (opened as resources from src/main/resources),
  * initializing a database, preparing and using a query cache 
  * and executing an on-the-fly created select-query with multiple 'in' values.

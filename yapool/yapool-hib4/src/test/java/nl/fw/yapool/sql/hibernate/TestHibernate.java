@@ -17,13 +17,21 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestHibernate {
 
+	@BeforeClass
+	public static void hib4OverSlf4j() {
+		System.setProperty("org.jboss.logging.provider", "slf4j");
+	}
+	
+
 	protected Logger log = LoggerFactory.getLogger(getClass());
+	
 	
 	/** Use hibernate with a database pool to insert and update a record. 
 	 * Tests the Hib4ConnectionProvider. 

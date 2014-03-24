@@ -26,8 +26,8 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
-		<!-- Hibernate uses JBoss logging. According to: http://blog-it.hypoport.de/2012/04/30/hibernate4-verwendet-jboss-logging-statt-slf4j-durch-die-log4j-bridge-leiten-wir-die-logs-zu-logback/ 
-			the log4j-over-slf4j should solve this. But it does not ... -->
+		<!-- To force Hib4 logging over Slf4j use System.setProperty("org.jboss.logging.provider", "slf4j"); -->
+		<!-- When using logback, that is somehow not needed. -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>

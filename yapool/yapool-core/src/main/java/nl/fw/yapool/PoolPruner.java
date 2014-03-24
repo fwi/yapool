@@ -49,6 +49,7 @@ public class PoolPruner {
     /**
      * Starts pruning the given pool.
      * If this is the first pruned pool, this pool pruner is started. 
+     * @return false only if pool's prune interval is less than 0, pool is null or closed.
      */
     public boolean add(PrunedPool<?> pool) {
     	
@@ -57,6 +58,9 @@ public class PoolPruner {
     	}
     	if (pools.contains(pool)) {
     		return true;
+    	}
+    	if (pool.getPruneIntervalMs() < 0L) {
+    		return false;
     	}
    		// Prevent starting while stopping
 		synchronized (this) {

@@ -320,10 +320,12 @@ public class PrunedPool<T> extends BoundPool<T> {
 		return pruneIntervalMs.get();
 	}
 
+	/**
+	 * Prune interval in milliseconds at witch prune tasks are scheduled.
+	 * @param pruneIntervalMs if less than zero, the pool will NOT be registered with the PoolPruner.
+	 */
 	public void setPruneIntervalMs(long pruneIntervalMs) {
-		if (pruneIntervalMs >= 0L) {
-			this.pruneIntervalMs.set(pruneIntervalMs);
-		}
+		this.pruneIntervalMs.set(pruneIntervalMs);
 	}
 	
 	public void setPruneTask(PruneTask pruneTask) {

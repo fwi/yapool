@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * See also {@link PruneTask}.
  * <p>
  * The singleton-pattern from Bill Pugh is used as described on
- * <a href="http://en.wikipedia.org/wiki/Singleton_pattern#The_solution_of_Bill_Pugh">WikiPedia</a>
+ * <a href="http://en.wikipedia.org/wiki/Singleton_pattern#Initialization_On_Demand_Holder_Idiom">WikiPedia</a>
  * @author FWiers
  *
  */

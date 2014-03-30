@@ -82,7 +82,7 @@ public class ExampleHsql {
 		log.info("Pruning: " + PoolPruner.getInstance().isRunning());
 		try {
 			// Constructing a DbConn never throws an error.
-			runQueries(new DbConn(pool));
+			runQueries(pool);
 		} finally {
 			// Always assume that runtime-errors can occur
 			// and use a try-finally block to close open resources.
@@ -92,8 +92,10 @@ public class ExampleHsql {
 		}
 	}
 	
-	public void runQueries(DbConn c) {
+	public void runQueries(SqlPool pool) {
 		
+		// DbConn constructors never throw an exception, safe to use outside try-catch block.
+		DbConn c = new DbConn(pool);
 		try {
 			log.info("Create table: " + c.execute(createTable)); 
 			// With autocommit off, a commit call is required, i.e. 
@@ -114,6 +116,8 @@ public class ExampleHsql {
 			c.rollbackAndClose(e);
 		} finally {
 			// Always release connection back to the pool.
+			// DbConn.close() never throws an exception.
+			// Errors are logged using the DbConn.closeLogger.
 			c.close();
 		}
 	}

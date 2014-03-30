@@ -72,7 +72,9 @@ public class BeanClone {
 			ByteArrayInputStream bais = new ByteArrayInputStream(ba);
 			ObjectInputStream oin = new ObjectInputStream(bais);
 			o = oin.readObject();
-		} catch (Exception e) {
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 		return o;

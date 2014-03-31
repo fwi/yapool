@@ -12,6 +12,13 @@ import nl.fw.yapool.sql.SqlFactory;
 import nl.fw.yapool.sql.SqlPool;
 import nl.fw.yapool.sql.hibernate.Hib4ConnectionProvider;
 
+/**
+ * Hibernate 4 connection provider used in the {@link ExampleHib4Jpa}.
+ * This connection provider is set via <tt>hibernate.connection.provider_class</tt>
+ * in META-INF/persistence.xml.
+ * @author fwiers
+ *
+ */
 public class Hib4JpaCProvider extends Hib4ConnectionProvider {
 
 	private static final long serialVersionUID = 5650209473144698010L;

@@ -35,6 +35,8 @@ public class HibernateTestCP extends Hib4ConnectionProvider {
 		// Disable cache so that all expected queries are executed.
 		props.setProperty(Environment.USE_SECOND_LEVEL_CACHE, "false");
 		props.setProperty(Environment.SHOW_SQL, "true");
+		// Register updated properties, this may not always work for all properties.
+		// But it does work for "SHOW_SQL".
 		properties.putAll(props);
 		getProvidedPools().addPool(poolId, pool);
 		log.info("SqlPool configure for Hibernate Test.");

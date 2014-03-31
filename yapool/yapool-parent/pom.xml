@@ -11,6 +11,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j.version>1.7.6</slf4j.version>
+		<hib4.version>4.2.10.Final</hib4.version>
 	</properties>
 
 	<dependencyManagement>

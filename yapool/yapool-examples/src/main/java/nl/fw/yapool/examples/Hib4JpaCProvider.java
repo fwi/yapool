@@ -63,8 +63,10 @@ public class Hib4JpaCProvider extends Hib4ConnectionProvider {
 		}
 		factory.getConnectionProps().setProperty("password", pass);
 		
-		// POOL_SIZE is actually for the internal Hibernate pool, but why not use it here.
-		pool.setMaxSize(Integer.valueOf(props.getProperty(Environment.POOL_SIZE)));
+		// These non-Hibernate custom settings for SqlPool are present in the "Map properties" from persistence.xml.
+		// Hibernate is friendly enough to pass these along.
+		pool.setMinSize(Integer.valueOf(props.getProperty("hibernate.sqlpool.minSize")));
+		pool.setMaxSize(Integer.valueOf(props.getProperty("hibernate.sqlpool.maxSize")));
 		
 		if (logPoolEvents) {
 			pool.getEvents().addPoolListener(new PoolEventLogger());

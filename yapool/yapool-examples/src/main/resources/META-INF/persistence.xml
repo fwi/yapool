@@ -21,12 +21,15 @@
 			     
 			<!-- Important setting, else connections may never return to the pool. -->
 			<property name="hibernate.connection.release_mode" value="after_transaction" />
-			<property name="hibernate.connection.pool_size" value="2" />
+			
+			<!-- Custom settings for SqlPool, Hibernate will pass these along also. -->
+			<property name="hibernate.sqlpool.minSize" value="1" />
+			<property name="hibernate.sqlpool.maxSize" value="2" />
 			
             <property name="hibernate.cache.use_second_level_cache" value="false" />
 
             <property name="hibernate.hbm2ddl.auto" value="create-drop" />
-            <property name="hibernate.show_sql" value="true" />
+            <property name="hibernate.show_sql" value="false" />
 		</properties>
 	</persistence-unit>
 </persistence>

@@ -8,11 +8,12 @@ For examples of what makes Yapool tick, have a look at the following classes:
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleEvents.java ExampleEvents] - creating a simple pruned pool and listening to pool events.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleConfig.java ExampleConfig] - using the BeanConfig class to configure a pool and pool factory, and log all properties.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleHsql.java ExampleHsql] - create a simple HSQL database connection pool suitable for unit testing.
+ * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleHib4Jpa.java ExampleHib4Jpa] - use Hibernate 4 via JPA and configure the SqlPool via "persistence.xml" in a Java SE environment.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleValidateOnCheckIn.java ExampleValidateOnCheckIn] - enable validation on check in (when a resource is released). This is not a configurable option in Yapool (unlike other database pools), but this example shows how (easily) it can be done.
  * [https://code.google.com/p/yapool/source/browse/trunk/yapool/yapool-examples/src/main/java/nl/fw/yapool/examples/ExampleQueryCache.java ExampleQueryCache] - advanced example showing how to load queries from file and use a query cache for maximum efficiency.
 
 Downloads are available in the [https://code.google.com/p/yapool/source/browse/downloads source downloads] directory (use the "raw file link" at the rigth side for each file).
 
 Or use the following links:
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.1-artifacts.zip 0.9.1 binaries] (includes Javadoc)
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.1-project.zip 0.9.1 project] (includes all source code).
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.2-artifacts.zip 0.9.2 binaries] (includes Javadoc)
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.2-project.zip 0.9.2 project] (includes all source code).

@@ -17,6 +17,7 @@
 		<module>yapool-core</module>
 		<module>yapool-hib3</module>
 		<module>yapool-hib4</module>
+		<module>yapool-hib43</module>
 		<module>yapool-examples</module>
 	</modules>
 

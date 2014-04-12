@@ -10,7 +10,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<slf4j.version>1.7.6</slf4j.version>
+		<slf4j.version>1.7.7</slf4j.version>
 		<hib4.version>4.2.12.Final</hib4.version>
 		<hib43.version>4.3.5.Final</hib43.version>
 	</properties>

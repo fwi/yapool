@@ -382,9 +382,7 @@ public class DbConn {
 			} else if (connFactory != null) {
 				connFactory.destroy(conn);
 			} else {
-				try { conn.close(); } catch (SQLException sqle) {
-					closeLogger.warn("Failed to close a database connection: " + sqle);
-				}
+				close(conn);
 			}
 			conn = null;
 		}
@@ -396,7 +394,7 @@ public class DbConn {
 		try {
 			if (s != null) s.close();
 		} catch (SQLException se) {
-			closeLogger.warn("Failed to close statement: " + s);
+			closeLogger.warn("Failed to close statement " + s + ": " + se);
 		}
 	}
 
@@ -406,7 +404,7 @@ public class DbConn {
 		try {
 			if (s != null) s.close();
 		} catch (SQLException se) {
-			closeLogger.warn("Failed to close named statement: " + s);
+			closeLogger.warn("Failed to close named statement " + s + ": " + se);
 		}
 	}
 	
@@ -416,10 +414,20 @@ public class DbConn {
 		try {
 			if (rs != null) rs.close();
 		} catch (SQLException se) {
-			closeLogger.warn("Failed to close result set: " + rs);
+			closeLogger.warn("Failed to close result set " + rs + ": " + se);
 		}
 	}
-	
+
+	/** Closes a database Connection (checks for null-value), logs any error as warning using closeLogger. */
+	public static void close(final Connection c) {
+		
+		try {
+			if (c != null) c.close();
+		} catch (SQLException se) {
+			closeLogger.warn("Failed to close database connection " + c + ": " + se);
+		}
+	}
+
 	/**
 	 * Utility method for constructing a prepared statement using the 'in' keyword.
 	 * <br>Copied from http://stackoverflow.com/questions/178479/preparedstatement-in-clause-alternatives.

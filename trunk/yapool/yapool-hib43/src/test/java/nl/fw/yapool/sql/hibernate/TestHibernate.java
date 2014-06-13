@@ -50,6 +50,9 @@ public class TestHibernate {
 		Configuration configuration = new Configuration();
 		// Set the dbpool connection provider.
 		configuration.setProperty(Environment.CONNECTION_PROVIDER, HibernateTestCP.class.getName());
+		// See http://docs.jboss.org/hibernate/orm/4.3/manual/en-US/html_single/#architecture-current-session
+		// configuration.setProperty(Environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
+		// org.hibernate.context.internal.ThreadLocalSessionContext.class.getName()
 		configuration.addAnnotatedClass(T.class);
 		
 		ServiceRegistry serviceRegistry = null;
@@ -74,8 +77,15 @@ public class TestHibernate {
 			clearDbInMem(pool);
 			
 			assertEquals("Database connections must not be used", 1, pool.getIdleSize());
+			// Current session is closed after transaction is committed.
+			// That is not what is needed here.
+			// session = sessionFactory.getCurrentSession();
+			
 			session = sessionFactory.openSession();
+			session.getTransaction().begin();
 			session.createSQLQuery(createTable).executeUpdate();
+			session.getTransaction().commit();
+			//session = sessionFactory.getCurrentSession();
 			session.getTransaction().begin();
 			T t = new T();
 			t.setName("Frederik");
@@ -84,7 +94,7 @@ public class TestHibernate {
 			session.getTransaction().begin();
 			t.setName("Frederik Wiers");
 			session.getTransaction().commit();
-			session.close();
+			session.close(); // Let's start fresh.
 			long id = t.getId();
 			session = sessionFactory.openSession();
 			t = (T)session.load(T.class, id);

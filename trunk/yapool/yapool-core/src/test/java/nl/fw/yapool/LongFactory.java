@@ -13,6 +13,10 @@ public class LongFactory implements IPoolFactory<Long> {
 	
 	public AtomicLong createCount = new AtomicLong();
 	
+	public void setStartValue(long start) {
+		createCount.set(start);
+	}
+	
 	@Override
 	public Long create() {
 		return createCount.incrementAndGet();

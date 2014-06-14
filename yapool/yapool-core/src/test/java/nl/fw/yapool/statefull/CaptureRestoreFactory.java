@@ -81,7 +81,7 @@ public abstract class CaptureRestoreFactory<T> implements IPoolFactory<T> {
 			} else {
 				resource = createNew();
 			}
-			if (i == maxRestore -1) {
+			if (i == maxRestore - 1) {
 				restore = null;
 				if (log.isDebugEnabled()) {
 					log.debug(getClass().getSimpleName() + " all " + maxRestore + " resources restored to pool.");

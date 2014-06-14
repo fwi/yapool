@@ -44,7 +44,7 @@ public abstract class CaptureRestoreFactory<T> implements IPoolFactory<T> {
 	 * Returns null when all resources have been restored.
 	 */
 	public List<T> getRestore() {
-		return (restore == null ) ? null : Collections.unmodifiableList(restore);
+		return (restore == null ? null : Collections.unmodifiableList(restore));
 	}
 
 	public int getRestoreIndex() {

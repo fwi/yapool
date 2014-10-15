@@ -20,6 +20,7 @@ public class SqlPool extends PrunedPool<Connection> {
 	 * <br> - max acquire time 50 seconds
 	 * <br> - max idle time 1 minute
 	 * <br> - max lease time 5 minutes
+	 * <br> - max life time 30 minutes
 	 * <br> - open 1 connection at start (min size).
 	 */
 	public SqlPool() {
@@ -29,6 +30,7 @@ public class SqlPool extends PrunedPool<Connection> {
 		setMaxAcquireTimeMs(50000L);
 		setMaxIdleTimeMs(60000L);
 		setMaxLeaseTimeMs(300000L);
+		setMaxLifeTimeMs(1800000L);
 		setMinSize(1);
 	}
 	
@@ -37,6 +39,12 @@ public class SqlPool extends PrunedPool<Connection> {
 		return (SqlFactory)super.getFactory();
 	}
 	
+	/**
+	 * Registers the pool with the {@link PoolPruner},
+	 * calls {@link SqlFactory#loadDbDriver()}
+	 * and opens the pool. 
+	 * 
+	 */
 	@Override
 	public void open(int amount) {
 		
@@ -48,6 +56,10 @@ public class SqlPool extends PrunedPool<Connection> {
 		super.open(amount);
 	}
 
+	/**
+	 * Removes the pool from the {@link PoolPruner}
+	 * and closes the pool.
+	 */
 	@Override
 	public void close() {
 		PoolPruner.getInstance().remove(this);
@@ -61,7 +73,7 @@ public class SqlPool extends PrunedPool<Connection> {
 		
 		final SqlFactory f = getFactory();
 		if (f == null) {
-			return "No factory for SQL Pooll set.";
+			return "No factory for SQL Pool set.";
 		}
 		final String lf = System.getProperty("line.separator");
 		StringBuilder sb = new StringBuilder("Status of database pool");
@@ -81,14 +93,20 @@ public class SqlPool extends PrunedPool<Connection> {
 		if (getMaxIdleTimeMs() == 0L) {
 			sb.append(lf).append("Not watching idle connections.");
 		} else {
-			sb.append(lf).append("Closed idle connections   : ").append(getIdledCount())
+			sb.append(lf).append("Closed idle connections    : ").append(getIdledCount())
 			.append(" (maximum idle time : ").append(getMaxIdleTimeMs()).append(")");
 		}
 		if (getMaxLeaseTimeMs() == 0L) {
 			sb.append(lf).append("Not watching for expired leases.");
 		} else {
-			sb.append(lf).append("Number of expired leases  : ").append(getExpiredCount())
+			sb.append(lf).append("Number of expired leases   : ").append(getExpiredCount())
 			.append(" (maximum lease time: ").append(getMaxLeaseTimeMs()).append(")");
+		}
+		if (getMaxLifeTimeMs() == 0L) {
+			sb.append(lf).append("Not watching connection life time.");
+		} else {
+			sb.append(lf).append("Closed life end connections: ").append(getLifeEndCount())
+			.append(" (maximum life time : ").append(getMaxLifeTimeMs()).append(")");
 		}
 		sb.append(lf);
 		sb.append(lf).append("Time-out watch interval        : ").append(getPruneIntervalMs());

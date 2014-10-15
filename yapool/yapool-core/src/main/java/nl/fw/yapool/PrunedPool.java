@@ -21,15 +21,20 @@ public class PrunedPool<T> extends BoundPool<T> {
 	public static final long DEFAULT_MAX_IDLE_TIME = 60000L;
 	/** 120 000 milliseconds (2 minutes) */
 	public static final long DEFAULT_MAX_LEASE_TIME = 120000L;
+	/** 1 800 000 milliseconds (30 minutes) */
+	public static final long DEFAULT_MAX_LIFE_TIME = 1800000L;
 
 	private PruneTask pruneTask;
 	private AtomicLong pruneIntervalMs = new AtomicLong(DEFAULT_PRUNE_INTERVAL);
 	private AtomicLong maxIdleTimeMs = new AtomicLong(DEFAULT_MAX_IDLE_TIME);
 	private AtomicLong maxLeaseTimeMs = new AtomicLong(DEFAULT_MAX_LEASE_TIME);
+	private AtomicLong maxLifeTimeMs = new AtomicLong(DEFAULT_MAX_LIFE_TIME);
 	protected AtomicLong idledCount = new AtomicLong();
 	protected AtomicLong expiredCount = new AtomicLong();
 	protected AtomicLong invalidCount = new AtomicLong();
+	protected AtomicLong lifeEndCount = new AtomicLong();
 
+	protected ConcurrentHashMap<T, Long> lifeTimeEnd = new ConcurrentHashMap<T, Long>();
 	protected ConcurrentHashMap<T, Long> idleTimeStart = new ConcurrentHashMap<T, Long>();
 	protected ConcurrentHashMap<T, Long> leaseTimeEnd = new ConcurrentHashMap<T, Long>();
 	protected ConcurrentHashMap<T, Thread> leasers = new ConcurrentHashMap<T, Thread>();
@@ -41,15 +46,39 @@ public class PrunedPool<T> extends BoundPool<T> {
 	private volatile boolean destroyOnExpiredLease;
 		
 	public void open(int amount) {
+		
+		if (getMaxLifeTimeMs() != 0L) {
+			if (getMaxIdleTimeMs() > getMaxLifeTimeMs()) {
+				log.warn(getPoolName() + " Max. life time (" + getMaxLifeTimeMs() + " ms.) must be greater than max. idle time (" 
+						+ getMaxIdleTimeMs() + " ms.), setting max. life time to two times max. idle time.");
+				setMaxLifeTimeMs(2 * getMaxIdleTimeMs());
+			}
+			if (getMaxLeaseTimeMs() > getMaxLifeTimeMs()) {
+				log.warn(getPoolName() + " Max. life time (" + getMaxLifeTimeMs() + " ms.) must be greater than max. lease time (" 
+						+ getMaxLeaseTimeMs() + " ms.), setting max. life time to two times max. lease time.");
+				setMaxLifeTimeMs(2 * getMaxLeaseTimeMs());
+			}
+		}
 		super.open(amount);
 		idledCount.set(0);
 		expiredCount.set(0);
 		invalidCount.set(0);
+		lifeEndCount.set(0);
 		if (pruneTask != null) {
 			pruneTask.start();
 		}
 	}
-	
+
+	@Override 
+	protected T create(boolean inLeasedState, boolean rethrowRuntimeException) {
+		
+		T t = super.create(inLeasedState, rethrowRuntimeException);
+		if (t != null && getMaxLifeTimeMs() > 0L) {
+			lifeTimeEnd.put(t, System.currentTimeMillis() + getMaxLifeTimeMs());
+		}
+		return t;
+	}
+
 	/**
 	 * Calls {@link #acquire(long, long)} with {@link #getMaxLeaseTimeMs()}.
 	 */
@@ -71,7 +100,6 @@ public class PrunedPool<T> extends BoundPool<T> {
 		T t = null;
 		do {
 			t = super.acquire(timeout); // will throw NoSuchElementException when none is available within timeout.
-			idleTimeStart.remove(t);
 			if (!isValid(t)) {
 				invalidCount.incrementAndGet();
 				fireEvent(PoolEvent.INVALID, t);
@@ -151,6 +179,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 		idleTimeStart.remove(t);
 		leaseTimeEnd.remove(t);
 		leasers.remove(t);
+		lifeTimeEnd.remove(t);
 	}
 
 	@Override
@@ -164,18 +193,24 @@ public class PrunedPool<T> extends BoundPool<T> {
 
 	/**
 	 * Removes resources from the pool that idled for {@link #getMaxIdleTimeMs()} 
-	 * or are leased for {@link #getMaxLeaseTimeMs()}.
+	 * or are leased for {@link #getMaxLeaseTimeMs()} or have passed the life time ({@link #getMaxLifeTimeMs()}).
 	 */
 	public void prune() {
 		
 		if (log.isTraceEnabled()) {
-			log.trace("Pruning pool " + getPoolName() + " (max. idle: " + getMaxIdleTimeMs() + ", max. lease: " + getMaxLeaseTimeMs() + ")");
+			log.trace("Pruning pool " + getPoolName() 
+					+ " (max. idle: " + getMaxIdleTimeMs() 
+					+ ", max. lease: " + getMaxLeaseTimeMs()
+					+ ", max. life: " + getMaxLifeTimeMs() + ")");
 		}
 		try {
 			checkIdleTime();
-			if (checkLeaseTime() > 0) {
+			int removed = checkLeaseTime();
+			removed += checkLifeTime();
+			if (removed > 0) {
 				// If the factory cannot create resources (e.g. database unavailable), no resources are evicted (eventually).
 				// In this case, do not ensure minimum size because that will just show a lot of error messages.
+				// Only ensure minimum size when prune-task has removed connections.
 				ensureMinSize();
 			}
 		} catch (Exception e) {
@@ -211,6 +246,8 @@ public class PrunedPool<T> extends BoundPool<T> {
 					removedCount++;
 					idledCount.incrementAndGet();
 					done = false;
+					// no need for further cleanup, destroy() is called for removed idle resource,
+					// which in removes all references (calls removeReferences).
 				}
 			}
 		}
@@ -227,7 +264,7 @@ public class PrunedPool<T> extends BoundPool<T> {
 	protected int checkLeaseTime() {
 		
 		long now = System.currentTimeMillis();
-		int evictedCount = 0;
+		int evictedResourcesCount = 0;
 		for (T t : leaseTimeEnd.keySet()) {
 			Long leaseEnd = leaseTimeEnd.get(t);
 			if (leaseEnd == null || leaseEnd == 0L || now <= leaseEnd) {
@@ -237,22 +274,72 @@ public class PrunedPool<T> extends BoundPool<T> {
 			// if user is interrupted, first get stack trace from user and log it.
 			if (isInterruptLeaser()) {
 				logExpiredTrace(t, user);
-				if (user != null) {
-					user.interrupt();
-				}
 			}
-			T evicted = removeLeased(t, destroyOnExpiredLease, true);
-			if (evicted != null) {
-				evictedCount++;
+			if (removeLeased(t, isDestroyOnExpiredLease(), true) == null) {
+				continue;
+			}
+			removeReferences(t);
+			evictedResourcesCount++;
+			expiredCount.incrementAndGet();
+			if (isInterruptLeaser()) {
 				// if leaser was interrupted, stack trace logging was already done.
-				expiredCount.incrementAndGet();
-				if (!isInterruptLeaser()) {
-					logExpiredTrace(evicted, user);
+				if (user != null) {
+					try {
+						if (!user.isInterrupted()) {
+							user.interrupt();
+						}
+					} catch (Exception e) {
+						log.warn(getPoolName() + " Failed to interrupt thread " + t + " for leasing resource [" + t + "] for too long.");
+					}
+				}
+			} else {
+				logExpiredTrace(t, user);
+			}
+		} // for leaseTimeEnd
+		return evictedResourcesCount;
+	}
+	
+	/**
+	 * Tries to remove resources from the pool for which life time ended ({@link #getMaxLifeTimeMs()}).
+	 * @return amount of removed resources
+	 */
+	protected int checkLifeTime() {
+		
+		if (getMaxLifeTimeMs() == 0L) {
+			return 0;
+		}
+		long now = System.currentTimeMillis();
+		int evictedResourcesCount = 0;
+		for (T t : lifeTimeEnd.keySet()) {
+			Long lifeEnd = lifeTimeEnd.get(t);
+			if (lifeEnd == null || lifeEnd == 0L || now <= lifeEnd) {
+				continue;
+			}
+			boolean wasLeased = false;
+			boolean wasIdle = (removeIdle(t, false) != null);
+			if (!wasIdle) {
+				wasLeased = (removeLeased(t, false, false) != null);
+			}
+			if (wasIdle || wasLeased) {
+				if (wasLeased) {
+					// prevent memory leaks. 
+					// if resource was idle, removeReferences is called via destroy().
+					removeReferences(t);
+				}
+				evictedResourcesCount++;
+				lifeEndCount.incrementAndGet();
+				if (log.isDebugEnabled()) {
+					log.debug("Removed " + (wasIdle ? "idle" : "leased") + " resource [" + t + "] from pool " + getPoolName() + " after life time ended.");
+				}
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug("Failed to remove resource [" + t + "] from pool " + getPoolName() + " after life time ended, will retry on next prune cycle.");
 				}
 			}
-		}
-		return evictedCount;
+		} // for lifeTimeEnd
+		return evictedResourcesCount;
 	}
+
 	
 	/**
 	 * Try to create new idle resources until minimum size is reached.
@@ -284,7 +371,6 @@ public class PrunedPool<T> extends BoundPool<T> {
 	
 	protected void logExpiredTrace(T t, Thread user) {
 		
-		if (!isLogLeaseExpiredTrace()) return;
 		StringBuilder sb = new StringBuilder("Evicting resource from pool " + getPoolName() + " after lease time has expired");
 		if (user != null && isInterruptLeaser()) {
 			sb.append(", resource leaser will be interrupted.");
@@ -305,12 +391,15 @@ public class PrunedPool<T> extends BoundPool<T> {
 				}
 			}
 		}
+		String logMsg = sb.toString();
 		if (logLeaseExpiredTraceAsError) {
-			log.error(sb.toString());
+			log.error(logMsg);
 		} else if (logLeaseExpiredTraceAsWarn) {
-			log.warn(sb.toString());
+			log.warn(logMsg);
+		} else if (isLogLeaseExpiredTrace()) {
+			log.info(logMsg);
 		} else {
-			log.info(sb.toString());
+			log.debug(logMsg);
 		}
 	}
 
@@ -367,6 +456,22 @@ public class PrunedPool<T> extends BoundPool<T> {
 			this.maxLeaseTimeMs.set(maxLeaseTimeMs);
 		}
 	}
+	
+	public long getMaxLifeTimeMs() {
+		return maxLifeTimeMs.get();
+	}
+
+	/**
+	 * A resource that has been in use for too long, is removed from the pool.
+	 * <br>The main reason for regurarly refreshing all resources is to prevent (subtle) memory leaks. 
+	 * @param maxLifeTimeMs if 0, life time never expires.
+	 */
+	public void setMaxLifeTimeMs(long maxLifeTimeMs) {
+		if (maxLifeTimeMs >= 0L) {
+			this.maxLifeTimeMs.set(maxLifeTimeMs);
+		}
+	}
+
 	
 	public boolean isLogLeaseExpiredTrace() {
 		return logLeaseExpiredTrace;
@@ -436,6 +541,10 @@ public class PrunedPool<T> extends BoundPool<T> {
 
 	public long getInvalidCount() {
 		return invalidCount.get();
+	}
+
+	public long getLifeEndCount() {
+		return lifeEndCount.get();
 	}
 
 }

@@ -36,6 +36,7 @@ public class PruneTask implements Runnable {
 	 * Starts pruning the pool at regular intervals.
 	 */
 	public void start() {
+		
 		stop = false;
 		if (started) {
 			if (pool.log.isTraceEnabled()) {

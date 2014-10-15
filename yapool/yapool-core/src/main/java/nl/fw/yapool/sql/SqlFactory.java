@@ -88,6 +88,11 @@ public class SqlFactory implements IPoolFactory<Connection> {
 		boolean valid = false;
 		try {
 			valid = c.isValid(getValidateTimeOutS());
+			// See https://github.com/brettwooldridge/HikariCP/wiki/Pool-Analysis
+			// SQL warnings should be cleared.
+			if (valid) {
+				c.clearWarnings();
+			}
 		} catch (SQLException e) {
 			log.info("Database connection invalid.", e);
 		}

@@ -8,7 +8,11 @@ public class TimeDeltaStats implements Serializable {
 
 	private static final long serialVersionUID = -1855078416154479616L;
 
-	private List<Long> deltas = new LinkedList<Long>();
+	/**
+	 * Access must be synchronized, somehow TestBoundPool.singletonPool()
+	 * can throw a ConcurrentModificationException
+	 */
+	private final List<Long> deltas = new LinkedList<Long>();
 	private String name;
 
 	public TimeDeltaStats() {
@@ -24,14 +28,19 @@ public class TimeDeltaStats implements Serializable {
 	public String getName() { return name; }
 	
 	public void add(long delta) {
-		deltas.add(delta);
+		
+		synchronized (deltas) {
+			deltas.add(delta);
+		}
 	}
 	
 	public long getMin() {
 		
 		long min = Long.MAX_VALUE;
-		for (Long d : deltas) {
-			min = Math.min(min, d);
+		synchronized (deltas) {
+			for (Long d : deltas) {
+				min = Math.min(min, d);
+			}
 		}
 		return (min == Long.MAX_VALUE ? 0 : min);
 	}
@@ -39,8 +48,10 @@ public class TimeDeltaStats implements Serializable {
 	public long getMax() {
 		
 		long max = 0L;
-		for (Long d : deltas) {
-			max = Math.max(max, d);
+		synchronized (deltas) {
+			for (Long d : deltas) {
+				max = Math.max(max, d);
+			}
 		}
 		return max;
 	}
@@ -53,8 +64,10 @@ public class TimeDeltaStats implements Serializable {
 		
 		if (getCount() < 1) return 0L;
 		long total = 0L;
-		for (Long d : deltas) {
-			total += d;
+		synchronized (deltas) {
+			for (Long d : deltas) {
+				total += d;
+			}
 		}
 		return total / getCount();
 	}

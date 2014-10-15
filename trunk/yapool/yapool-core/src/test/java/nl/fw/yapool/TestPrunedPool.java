@@ -192,5 +192,23 @@ public class TestPrunedPool {
 		p.close();
 		//log.debug(events.toString());
 	}
-	
+
+	@Test
+	public void maxLifeLeased() {
+		
+		PoolEventQueue events;
+		Pruned p = TestUtil.createPrunedPool(events = new PoolEventQueue());
+		p.setPruneIntervalMs(1L);
+		events.register = true;
+		//events.logEvent = true;
+		p.open(0);
+		p.setMaxLifeTimeMs(5L);
+		Long l = p.acquire();
+		TestUtil.runPruner(p);
+		TestUtil.sleep(20L);
+		p.release(l);
+		p.close();
+		assertEquals(1, p.getLifeEndCount());
+	}
+
 }

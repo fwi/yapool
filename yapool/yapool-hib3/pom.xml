@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-core</artifactId>
-			<version>3.6.10.Final</version>
+			<version>${hib3.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

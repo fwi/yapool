@@ -44,7 +44,8 @@ public class PrunedPool<T> extends BoundPool<T> {
 	private volatile boolean logLeaseExpiredTraceAsError;
 	private volatile boolean interruptLeaser;
 	private volatile boolean destroyOnExpiredLease;
-		
+
+	@Override
 	public void open(int amount) {
 		
 		if (getMaxLifeTimeMs() != 0L) {

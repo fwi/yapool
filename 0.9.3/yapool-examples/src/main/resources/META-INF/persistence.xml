@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+	
+	<persistence-unit name="Hib4Jpa" transaction-type="RESOURCE_LOCAL">
+		
+        <class>nl.fw.yapool.examples.entities.T</class>
+		
+		<properties>
+		
+            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:test" />
+            <property name="javax.persistence.jdbc.user" value="SA" />
+            <property name="javax.persistence.jdbc.password" value="" />
+
+			<property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect" />
+
+			<property name="hibernate.connection.provider_class" 
+			     value="nl.fw.yapool.examples.Hib4JpaCProvider" />
+			     
+			<!-- Important setting, else connections may never return to the pool. -->
+			<property name="hibernate.connection.release_mode" value="after_transaction" />
+			
+			<!-- Custom settings for SqlPool, Hibernate will pass these along also. -->
+			<property name="hibernate.sqlpool.minSize" value="1" />
+			<property name="hibernate.sqlpool.maxSize" value="2" />
+			
+            <property name="hibernate.cache.use_second_level_cache" value="false" />
+
+            <property name="hibernate.hbm2ddl.auto" value="create-drop" />
+            <property name="hibernate.show_sql" value="false" />
+		</properties>
+	</persistence-unit>
+</persistence>

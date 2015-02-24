@@ -15,5 +15,5 @@ For examples of what makes Yapool tick, have a look at the following classes:
 Downloads are available in the [https://code.google.com/p/yapool/source/browse/downloads source downloads] directory (use the "raw file link" at the rigth side for each file).
 
 Or use the following links:
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.2-artifacts.zip 0.9.2 binaries] (includes Javadoc)
-  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.2-project.zip 0.9.2 project] (includes all source code).
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.3-artifacts.zip 0.9.3 binaries] (includes Javadoc)
+  * [https://yapool.googlecode.com/svn/downloads/yapool-0.9.3-project.zip 0.9.3 project] (includes all source code).

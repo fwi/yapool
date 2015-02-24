@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>nl.fw.yapool</groupId>
 		<artifactId>yapool-parent</artifactId>
-        <version>0.9.3</version>
+        <version>0.9.4-SNAPSHOT</version>
 		<relativePath>../yapool-parent</relativePath>
 	</parent>
 	<artifactId>yapool-examples</artifactId>

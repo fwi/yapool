@@ -1,7 +1,7 @@
 # Yapool
 
 A generic object pool suitable for basic re-use of objects 
-to full management of a healthy pool with idle-timeouts, lease-timeouts and maximum lifetime timeouts.
+up to full management of a healthy pool with idle-timeouts, lease-timeouts and maximum lifetime timeouts.
 
 "No locks were hurt in the Yapool project."
 
@@ -9,10 +9,10 @@ Yapool does not use locks to synchronize which prevents potential bottlenecks.
 Yapool can emit events for pool related actions (release, destroy, acquire, etc.).
 Yapool events can be used to gather statistics but also provide entrypoints for customizations.
 
-Pool implementations inherited each other from basic to full-featured: `IPool > Pool > BoundPool > PrunedPool`
+Pool implementations inherit each other from basic to full-featured: `IPool > Pool > BoundPool > PrunedPool`
 
 A pool needs an `IPoolFactory` to create, validate and destroy pool resources.
-Simple pool creation example:
+A simple pool creation example:
 
 ```java
 Pool<Long> pool = new Pool<Long>();
@@ -27,7 +27,7 @@ pool.setFactory(new IPoolFactory<Long>() {
 });
 ```
 
-For a `PrunedPool` that must be actively managed, register the pool with the `PoolPruner`:
+A `PrunedPool` needs to be registered with a `PoolPruner` to be maintained properly:
 
 ```java
 PoolPruner.getInstance().add(pool);
@@ -69,7 +69,7 @@ which can be added to the `PrunedPool` as a listener just like the `LeaserAcquir
 Note that this class is for debugging purposes only, this class is not suitable for production.
 
 A special-purpose `ObjectPool` is available in the `com.github.fwi.yapool.object` package.
-This pool has virtualy no limit on size (65k) and no maximum lease-time, but does have an idle-timeout.
+This pool has virtually no limit on size (65k) and no maximum lease-time, but does have an idle-timeout.
 Such an object-pool can be useful in situations where objects should be re-used
 and some memory is freed when objects in the pool are no longer used. 
 
@@ -77,7 +77,7 @@ A demonstration of customization can be found in the `com.github.fwi.yapool.stat
 The classes in this package capture the contents of a pool when it is closed 
 and add the contents back into the pool when it is opened (class `TestSaveRestore`).  
 
-The `yapool-demo` project contains a number of example-classes that show how Yapool can be used.
+The `yapool-demo` project contains a number of example-classes that show how Yapool can be used and how Yapool works.
 
 ## Development
 

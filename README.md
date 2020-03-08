@@ -14,7 +14,7 @@ Pool implementations inherited each other from basic to full-featured: `IPool > 
 A pool uses a `IPoolFactory` to create, validate and destroy pool resources.
 Simple pool creation example:
 
-```lang=java
+```java
 Pool<Long> pool = new Pool<Long>();
 pool.setFactory(new IPoolFactory<Long>() {
 
@@ -29,20 +29,20 @@ pool.setFactory(new IPoolFactory<Long>() {
 
 For a `PrunedPool` that must be actively managed, register to pool with the `PoolPruner`:
 
-```lang=java
+```java
 PoolPruner.getInstance().add(pool);
 ```
 		
 Both a `PrunedPool` and a `BoundPool` (which limits the maximum amount of resources in the pool)
 need to be opened:
 
-```lang=java
+```java
 pool.open();  
 ```
 
 Pool usage is similar in all cases:
 
-```lang=java
+```java
 Long resource = pool.acquire();
 try {
 	System.out.println("Got resource " + resource);

@@ -11,7 +11,7 @@ Yapool events can be used to gather statistics but also provide entrypoints for 
 
 Pool implementations inherited each other from basic to full-featured: `IPool > Pool > BoundPool > PrunedPool`
 
-A pool uses a `IPoolFactory` to create, validate and destroy pool resources.
+A pool needs an `IPoolFactory` to create, validate and destroy pool resources.
 Simple pool creation example:
 
 ```java
@@ -27,7 +27,7 @@ pool.setFactory(new IPoolFactory<Long>() {
 });
 ```
 
-For a `PrunedPool` that must be actively managed, register to pool with the `PoolPruner`:
+For a `PrunedPool` that must be actively managed, register the pool with the `PoolPruner`:
 
 ```java
 PoolPruner.getInstance().add(pool);
@@ -49,25 +49,35 @@ try {
 } finally {
 	pool.release(resource);
 }
-
-Long resource1 = pool.acquire();
-try {
-	System.out.println("Got resource1 " + resource1);
-	Long resource2 = pool.acquire();
-	try {
-		System.out.println("Got resource2 " + resource2);
-	} finally {
-		pool.release(resource2);
-	}
-} finally {
-	pool.release(resource1);
-}
-
 pool.close();
 ```
 
 When a `PrunedPool`  is closed, the `PoolPruner` task stops 
-and any executors are stopped and closed when this was the last pool that was being pruned. 
+and any executors are stopped and closed when this was the last pool that was being pruned.
+
+Pool events are used by the `com.github.fwi.yapool.listener.LeaserAcquiredTrace` class to log info-messages
+with stack-traces of resources that were taken from the pool but not returned within the lease-period.
+This is useful to track down coding mistakes or badly behaving application parts.
+The tracer can be added to a `PrunedPool` using:
+
+```java
+pool.getEvents().addPoolListener(new LeaserAcquiredTrace());
+```
+
+Pool performance statistics can be reported using the `com.github.fwi.yapool.listener.PoolPerformance` class
+which can be added to the `PrunedPool` as a listener just like the `LeaserAcquiredTrace` class.
+Note that this class is for debugging purposes only, this class is not suitable for production.
+
+A special-purpose `ObjectPool` is available in the `com.github.fwi.yapool.object` package.
+This pool has virtualy no limit on size (65k) and no maximum lease-time, but does have an idle-timeout.
+Such an object-pool can be useful in situations where objects should be re-used
+and some memory is freed when objects in the pool are no longer used. 
+
+A demonstration of customization can be found in the `com.github.fwi.yapool.statefull` package in the Java test-classes directory.
+The classes in this package capture the contents of a pool when it is closed 
+and add the contents back into the pool when it is opened (class `TestSaveRestore`).  
+
+The `yapool-demo` project contains a number of example-classes that show how Yapool can be used.
 
 ## Development
 

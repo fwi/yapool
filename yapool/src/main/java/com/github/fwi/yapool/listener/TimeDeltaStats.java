@@ -72,6 +72,7 @@ public class TimeDeltaStats implements Serializable {
 		return total / getCount();
 	}
 	
+	@Override
 	public String toString() {
 		
 		StringBuilder sb = new StringBuilder(name);

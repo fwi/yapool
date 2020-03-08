@@ -71,6 +71,8 @@ public class PoolResourcePerformance implements Comparable<PoolResourcePerforman
 	public static String toDate(long t) {
 		return (t == 0L ? "0" : df.format(new Date(t)));
 	}
+	
+	@Override
 	public String toString() {
 		
 		StringBuilder sb = new StringBuilder();

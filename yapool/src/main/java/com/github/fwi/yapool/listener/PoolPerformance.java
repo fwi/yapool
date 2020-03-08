@@ -10,6 +10,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.github.fwi.yapool.Pool;
 import com.github.fwi.yapool.PoolEvent;
 
+/**
+ * Gather pool statistics that can be reported via {@link #toString()}.
+ * <b>Not suitable for production.</b>
+ * 
+ * The underlying classes do not release memory / references regurarly.
+ *
+ */
 public class PoolPerformance extends PoolListener {
 
 	public AtomicLong acquireCount = new AtomicLong();

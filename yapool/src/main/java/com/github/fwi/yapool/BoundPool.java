@@ -444,6 +444,11 @@ public class BoundPool<T> extends Pool<T> {
 		return syncCreation;
 	}
 
+	/**
+	 * If true, new pool resources are created one by one.
+	 * If false, multiple pool resources can be created at the same time.
+	 * Default is false.
+	 */
 	public void setSyncCreation(boolean syncCreation) {
 		this.syncCreation = syncCreation;
 	}

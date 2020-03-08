@@ -57,7 +57,6 @@ pool.close();
 When a `PrunedPool`  is closed, the `PoolPruner` task stops 
 and any executors are stopped and closed when this was the last pool that was being pruned.
 
-
 Pool events are used by the `com.github.fwi.yapool.listener.LeaserAcquiredTrace` class to log info-messages
 with stack-traces of resources that were taken from the pool but not returned within the lease-period.
 This is useful to track down coding mistakes or badly behaving application parts.
@@ -98,4 +97,4 @@ Coverage report:
 	cd yapool
 	mvn cobertura:cobertura
 
-Report is stored in directory `target/site/cobertura`
+Report is stored in `target/site/cobertura/index.html`

@@ -22,6 +22,7 @@ public class PoolEvents implements IPoolEvents {
 	private AtomicReference<Set<String>> wantEventActions = new AtomicReference<Set<String>>();
 	private volatile boolean wantAllEventActions = true;
 	
+	@Override
 	public boolean wantEventAction(String poolEvent) {
 		return (haveListeners() ? (wantAllEventActions ? true : wantEventActions.get().contains(poolEvent)) : false);
 	}

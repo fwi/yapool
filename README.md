@@ -40,6 +40,8 @@ need to be opened:
 pool.open();  
 ```
 
+Pool properties can be changed at runtime (even after opening the pool), all `public` operations are thread-safe.
+
 Pool usage is similar in all cases:
 
 ```java
@@ -54,6 +56,7 @@ pool.close();
 
 When a `PrunedPool`  is closed, the `PoolPruner` task stops 
 and any executors are stopped and closed when this was the last pool that was being pruned.
+
 
 Pool events are used by the `com.github.fwi.yapool.listener.LeaserAcquiredTrace` class to log info-messages
 with stack-traces of resources that were taken from the pool but not returned within the lease-period.

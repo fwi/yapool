@@ -152,8 +152,15 @@ public class PoolPruner {
     	return started; 
     }
 
+    /**
+     * Sets the executor to use for pruning tasks.
+     * See also {@link #getExecutor()}.
+     * Must be set before this pruner is started, cannot be updated after pruner has started.
+     */
     public void setExecutor(ScheduledExecutorService executor) { 
-    	this.executor = executor; 
+    	if (!isRunning()) {
+    		this.executor = executor;
+    	}
     }
     
     /** 
@@ -172,8 +179,16 @@ public class PoolPruner {
 	public boolean isShutdownExecutor() {
 		return shutdownExecutor;
 	}
+	
+	/**
+	 * Shutdown executor when no more pools are pruned, or not.
+	 * See also {@link #isShutdownExecutor()}.
+     * Must be set before this pruner is started, cannot be updated after pruner has started.
+	 */
 	public void setShutdownExecutor(boolean shutdownExecutor) {
-		this.shutdownExecutor = shutdownExecutor;
+    	if (!isRunning()) {
+    		this.shutdownExecutor = shutdownExecutor;
+    	}
 	}
 
 }

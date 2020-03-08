@@ -66,13 +66,13 @@ public class PoolPruner {
 		synchronized (this) {
     		if (!started) {
     	    	log.debug("Pool pruner starting.");
-    			started = true;
     			if (getExecutor() == null) {
     				ScheduledThreadPoolExecutor stp = new ScheduledThreadPoolExecutor(1);
     				stp.setRemoveOnCancelPolicy(true);
     				setExecutor(stp);
     				setShutdownExecutor(true);
     			}
+    			started = true;
     		}
        		pools.add(pool);
     		if (pool.getPruneTask() == null) {

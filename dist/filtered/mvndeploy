@@ -1,0 +1,2 @@
+mvn deploy:deploy-file -Dpackaging=pom -DpomFile=${project.artifactId}-${project.version}-parent-pom.xml -Dfile=${project.artifactId}-${project.version}-parent-pom.xml -Durl=file:///maven-repo/releases 
+mvn deploy:deploy-file -Dfile=${project.artifactId}-${project.version}.jar -DpomFile=${project.artifactId}-${project.version}-pom.xml -Dsources=${project.artifactId}-${project.version}-sources.jar -Durl=file:///maven-repo/releases 

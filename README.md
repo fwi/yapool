@@ -91,7 +91,7 @@ To install:
 	
 Full build:
 
-	mvn clean package
+	mvn clean verify
 
 Coverage report:
 

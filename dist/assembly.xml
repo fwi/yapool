@@ -8,10 +8,6 @@
 	<includeBaseDirectory>true</includeBaseDirectory>
 	<files>
 		<file>
-			<source>../yapool-parent/pom.xml</source>
-			<destName>${project.artifactId}-${project.version}-parent-pom.xml</destName>
-		</file>
-		<file>
 			<source>pom.xml</source>
 			<destName>${project.artifactId}-${project.version}-pom.xml</destName>
 		</file>

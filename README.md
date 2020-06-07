@@ -75,11 +75,13 @@ This pool has virtually no limit on size (65k) and no maximum lease-time, but do
 Such an object-pool can be useful in situations where objects should be re-used
 and some memory is freed when objects in the pool are no longer used. 
 
-A demonstration of customization can be found in the `com.github.fwi.yapool.statefull` package in the Java test-classes directory.
+A number of examples that show how Yapool can be used are available in the `com.github.fwi.yapool.examples` 
+[package](./src/test/java/com/github/fwi/yapool/examples) in the Java test-classes directory.
+
+A demonstration of customization can be found in the `com.github.fwi.yapool.statefull` 
+[package](./src/test/java/com/github/fwi/yapool/statefull) in the Java test-classes directory.
 The classes in this package capture the contents of a pool when it is closed 
 and add the contents back into the pool when it is opened (class `TestSaveRestore`).  
-
-The `yapool-demo` project contains a number of example-classes that show how Yapool can be used and how Yapool works.
 
 ## Development
 
@@ -87,14 +89,17 @@ To install:
 
 	mvn clean install
 	
-Full build for core:
+Full build:
 
-	cd yapool
-	mvn clean verify assembly:single
+	mvn clean package
 
 Coverage report:
 
-	cd yapool
 	mvn cobertura:cobertura
 
 Report is stored in `target/site/cobertura/index.html`
+
+Zip project:
+
+	mvn assembly:single -Pzip
+

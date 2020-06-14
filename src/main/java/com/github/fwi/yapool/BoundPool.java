@@ -428,6 +428,10 @@ public class BoundPool<T> extends Pool<T> {
 		return leasedSize.get();
 	}
 	
+	public boolean isEmpty() {
+		return resCount.get() < 1;
+	}
+
 	public int getSize() { 
 		return Math.min(resCount.get(), getMaxSize()); 
 	}

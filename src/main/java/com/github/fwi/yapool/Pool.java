@@ -60,6 +60,7 @@ public class Pool<T> implements IPool<T> {
 		return acquire(getMaxAcquireTimeMs());
 	}
 
+	@Override
 	public T acquire(long acquireTimeOutMs) {
 		
 		if (isClosed()) {
@@ -118,6 +119,7 @@ public class Pool<T> implements IPool<T> {
 		return closed;
 	}
 
+	@Override
 	public void close() {
 		
 		closed = true;

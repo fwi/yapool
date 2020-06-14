@@ -37,7 +37,7 @@ public class PoolMap<T, K> {
 	protected final ConcurrentHashMap<K, PrunedPool<T>> poolsMap = new ConcurrentHashMap<>();
 	protected final ReentrantLock poolCreateLock = new ReentrantLock();
 	protected final Set<PrunedPool<T>> poolsInUse =  Collections.newSetFromMap(new ConcurrentHashMap<>());
-	protected final ReentrantReadWriteLock poolUseLock = new ReentrantReadWriteLock();
+	protected final ReentrantReadWriteLock poolUseLock;
 	protected final IPoolMapFactory<T, K> poolsFactory;
 	protected final PoolPruner poolsPruner;
 	protected volatile boolean closed;
@@ -47,9 +47,21 @@ public class PoolMap<T, K> {
 	}
 
 	public PoolMap(IPoolMapFactory<T, K> poolsFactory, PoolPruner poolPruner) {
+		this(poolsFactory, poolPruner, false);
+	}
+
+	/**
+	 * 
+	 * @param poolsFactory The factory to create new pools.
+	 * @param poolPruner THe pruner of pools.
+	 * @param fair If true, the lock to cleanup pools is fair. Default false 
+	 * (lock is used only for a short while - lock contention should not be an issue).
+	 */
+	public PoolMap(IPoolMapFactory<T, K> poolsFactory, PoolPruner poolPruner, boolean fair) {
 		super();
 		this.poolsFactory = poolsFactory;
 		this.poolsPruner = poolPruner;
+		this.poolUseLock = new ReentrantReadWriteLock(fair);
 	}
 	
 	/** 
@@ -148,7 +160,7 @@ public class PoolMap<T, K> {
 		boolean removed = false;
 		poolUseLock.writeLock().lock();
 		try {
-			// re-check after lock to ensure pool is not being used..
+			// re-check after lock to ensure pool is not being used.
 			if (isUsed(pool)) {
 				return;
 			}

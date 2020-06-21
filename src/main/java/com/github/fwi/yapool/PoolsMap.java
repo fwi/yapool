@@ -73,7 +73,7 @@ public class PoolsMap<T, K> {
 	 */
     
 	/**
-	 * Calls {@link #PoolMap(IPoolsMapFactory, PoolPruner) with the default {@link PoolPruner#getInstance()}.
+	 * Calls {@link #PoolsMap(IPoolsMapFactory, PoolPruner)} with the default {@link PoolPruner#getInstance()}.
 	 */
     public PoolsMap(IPoolsMapFactory<T, K> poolsFactory) {
 		this(poolsFactory, PoolPruner.getInstance());
@@ -82,8 +82,6 @@ public class PoolsMap<T, K> {
 	/**
 	 * @param poolsFactory The factory to create new pools (required).
 	 * @param poolPruner The pruner of pools (required).
-	 * @param fair If true, the lock to cleanup pools is fair. Default false 
-	 * (lock is used only for a short while - lock contention should not be an issue).
 	 */
 	public PoolsMap(IPoolsMapFactory<T, K> poolsFactory, PoolPruner poolPruner) {
 		super();
@@ -94,7 +92,7 @@ public class PoolsMap<T, K> {
 	/**
 	 * Open this pools-map for usage. Creates a {@link ScheduledThreadPoolExecutor}
 	 * if no {@link #setExecutor(ScheduledExecutorService)} was set.
-	 * @return
+	 * @return this instance.
 	 */
 	public synchronized PoolsMap<T, K> open() {
 

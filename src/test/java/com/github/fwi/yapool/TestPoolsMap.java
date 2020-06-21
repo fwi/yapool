@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestPoolMap {
+public class TestPoolsMap {
 
 	protected Logger log = LoggerFactory.getLogger(getClass());
 
@@ -17,7 +17,9 @@ public class TestPoolMap {
 	public void testPoolMap() {
 		
 		PoolMapFactory factory = new PoolMapFactory();
-		PoolMap<Long, String> pools = new PoolMap<>(factory);
+		PoolsMap<Long, String> pools = new PoolsMap<>(factory);
+		pools.setCleanIntervalMs(1L);
+		pools.open();
 		Long r1_1 = pools.acquire("1000");
 		Long r1_2 = pools.acquire("1000");
 		Long r2_3 = pools.acquire("2000");
@@ -26,7 +28,7 @@ public class TestPoolMap {
 		pools.release("2000", r2_3);
 		pools.release("1000", r1_2);
 		pools.release("2000", pools.acquire("2000"));
-		assertEquals("Verify resources are re-used.", 2, pools.poolsMap.get("2000").getSize());
+		assertEquals("Verify resources are re-used.", 2, pools.poolsMap.get("2000").getPool().getSize());
 		// destroy method from factory gets called when pool does not exist for resource
 		pools.release("dummy", 0L);
 		assertEquals(1L, factory.destroyedCounter.get());
@@ -38,7 +40,7 @@ public class TestPoolMap {
 		// TODO: test the read/write lock.
 	}
 	
-	static class PoolMapFactory implements IPoolMapFactory<Long, String> {
+	static class PoolMapFactory implements IPoolsMapFactory<Long, String> {
 
 		protected Logger log = LoggerFactory.getLogger(getClass());
 
@@ -61,7 +63,7 @@ public class TestPoolMap {
 		
 		@Override
 		public void destroy(String poolKey, Long t) {
-			log.debug("Resouce released after pool {} closed or no longer exists: {}", poolKey, t);
+			log.debug("Resource released after pool {} closed or no longer exists: {}", poolKey, t);
 			destroyedCounter.incrementAndGet();
 		}
 		

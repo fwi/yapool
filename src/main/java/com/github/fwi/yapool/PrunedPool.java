@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PrunedPool<T> extends BoundPool<T> {
 
 	/** 1000 milliseconds (1 second) */
-	public static final long DEFAULT_PRUNE_INTERVAL = 1000L;
+	public static final long DEFAULT_PRUNE_INTERVAL = 1_000L;
 	/** 60 000 milliseconds (1 minute) */
-	public static final long DEFAULT_MAX_IDLE_TIME = 60000L;
+	public static final long DEFAULT_MAX_IDLE_TIME = 60_000L;
 	/** 120 000 milliseconds (2 minutes) */
-	public static final long DEFAULT_MAX_LEASE_TIME = 120000L;
+	public static final long DEFAULT_MAX_LEASE_TIME = 120_000L;
 	/** 1 800 000 milliseconds (30 minutes) */
-	public static final long DEFAULT_MAX_LIFE_TIME = 1800000L;
+	public static final long DEFAULT_MAX_LIFE_TIME = 1_800_000L;
 
 	private PruneTask pruneTask;
 	private AtomicLong pruneIntervalMs = new AtomicLong(DEFAULT_PRUNE_INTERVAL);

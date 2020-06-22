@@ -111,3 +111,7 @@ Zip project:
 
 	mvn assembly:single -Pzip
 
+# Improvements / TODOs
+
+- Do not create a resource when a resource was retuned to the pool and available (idle) in the mean time.
+- Metrics using JMX and something like Micrometer/Dropwizard Metrics.

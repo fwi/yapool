@@ -105,6 +105,7 @@ public class PoolsMap<T, K> {
 			stp.setRemoveOnCancelPolicy(true);
 			setExecutor(stp);
 			setShutdownExecutor(true);
+			log.trace("[{}] Created scheduled executor.", getPoolsName());
 		}
 		opened = true;
 		closed = false;
@@ -226,6 +227,7 @@ public class PoolsMap<T, K> {
 		if (isClosed()) {
 			return;
 		}
+		log.trace("[{}] Cleaning pools", getPoolsName());
 		Iterator<Entry<K, PoolsMapPool<T>>> it = poolsMap.entrySet().iterator();
 		// The iterator can handle changes to the underlying map.
 		// The iterator supports element removal from underlying map. 
@@ -240,6 +242,8 @@ public class PoolsMap<T, K> {
 					if (lockPool.getPool().isEmpty()) {
 						// remove pool-entry from map
 						it.remove();
+						// do not forget to close the pool so that pool-pruner is kept up to date.
+						lockPool.getPool().close();
 						log.debug("[{}] Removed pool for key {}", getPoolsName(), lockPoolEntry.getKey());
 					}
 					lock.unlock();
@@ -290,7 +294,11 @@ public class PoolsMap<T, K> {
 	public int getSize() {
 		return poolsMap.size();
 	}
-	
+
+	public boolean isEmpty() {
+		return getSize() < 1;
+	}
+
 	/**
 	 * This is an expensive method, do not call this in a loop.
 	 * @return all keys related to pools.
@@ -335,7 +343,7 @@ public class PoolsMap<T, K> {
 	}
 
 	/**
-	 * Clean interval in milliseconds at witch empty pools will be remove.
+	 * Clean interval in milliseconds at witch empty pools will be removed.
 	 * @param cleanIntervalMs Any value lower than 1 will be ignored.
 	 */
 	public void setCleanIntervalMs(long cleanIntervalMs) {

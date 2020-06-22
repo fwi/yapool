@@ -155,7 +155,7 @@ public class TestPoolsMap {
 	
 	static class PoolFactory implements IPoolFactory<Long> {
 
-		static final AtomicLong facoryCounter = new AtomicLong();
+		static final AtomicLong factoryCounter = new AtomicLong();
 		
 		final Long startAt;
 		
@@ -172,7 +172,7 @@ public class TestPoolsMap {
 		
 		@Override
 		public Long create() {
-			return startAt + facoryCounter.incrementAndGet();
+			return startAt + factoryCounter.incrementAndGet();
 		}
 		
 	}

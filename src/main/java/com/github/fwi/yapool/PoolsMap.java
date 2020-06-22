@@ -133,7 +133,7 @@ public class PoolsMap<T, K> {
 
 	public T acquire(K poolKey, long acquireTimeOutMs, long maxLeasedTimeMs) {
 		
-		ensurePoolNotClosed();
+		ensureNotClosed();
 		PoolsMapPool<T> lockPool = null;
 		while (lockPool == null) {
 			lockPool = poolsMap.get(poolKey);
@@ -144,16 +144,20 @@ public class PoolsMap<T, K> {
 			} else {
 				lockPool.getUseLock().readLock().lock();
 				if (lockPool.getPool().isClosed()) {
-					if (poolsMap.containsValue(lockPool)) {
-						// This should not happen, clean-method should have removed this.
-						log.error("[{}] Programming error: closed pool in pools-map.", getPoolsName());
-						poolsMap.remove(lockPool);
+					try {
+						ensureNotClosed();
+						if (poolsMap.containsValue(lockPool)) {
+							// This should not happen, clean-method should have removed this.
+							log.error("[{}] Programming error: closed pool in pools-map.", getPoolsName());
+							poolsMap.remove(lockPool);
+						}
+					} finally {
+						lockPool.getUseLock().readLock().unlock();
 					}
-					lockPool.getUseLock().readLock().unlock();
 					lockPool = null;
 				}
 			}
-		}
+		} // while lockpool null
 		T t = null;
 		try {
 			if (acquireTimeOutMs < 0L) {
@@ -172,7 +176,7 @@ public class PoolsMap<T, K> {
 	/**
 	 * Throws an {@link IllegalStateException} when pool is closed.
 	 */
-	protected void ensurePoolNotClosed() {
+	protected void ensureNotClosed() {
 		
 		if (isClosed()) {
 			throw new IllegalStateException("Pools-map is closed.");
@@ -182,10 +186,11 @@ public class PoolsMap<T, K> {
 	protected PoolsMapPool<T> createPool(K poolKey) {
 		
 		PoolsMapPool<T> lockPool = null;
+		// lock is required here to prevent creating two pools for the same pool-key.
 		poolCreateLock.lock();
 		try {
 			// recheck closed status in case PoolMap is closed while an "acquire" is still happening.
-			ensurePoolNotClosed();
+			ensureNotClosed();
 			lockPool = poolsMap.get(poolKey);
 			if (lockPool == null) {
 				PrunedPool<T> pool = poolsFactory.create(poolKey, poolsPruner);

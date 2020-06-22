@@ -1,6 +1,7 @@
 package com.github.fwi.yapool;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ public class PoolsMapCleanTask implements Runnable {
 
 	private final PoolsMap<?, ?> poolsMap;
 	private volatile boolean stop;
+	private volatile ScheduledFuture<?> scheduledTask;
 	
 	public PoolsMapCleanTask(PoolsMap<?, ?> poolsMap) {
 		this.poolsMap = poolsMap;
@@ -40,7 +42,7 @@ public class PoolsMapCleanTask implements Runnable {
 		if (executor == null || isStopped() || poolsMap.isClosed()) {
 			log.debug("Clean-task stopped for pools-map {}", poolsMap);
 		} else {
-			executor.schedule(this, poolsMap.getCleanIntervalMs(), TimeUnit.MILLISECONDS);
+			scheduledTask = executor.schedule(this, poolsMap.getCleanIntervalMs(), TimeUnit.MILLISECONDS);
 			log.trace("Clean-task scheduled for pools-map {}", poolsMap);
 		}
 	}
@@ -50,7 +52,17 @@ public class PoolsMapCleanTask implements Runnable {
 	}
 	
 	public void stop() {
+		
+		if (stop) return;
 		stop = true;
+		ScheduledFuture<?> st = scheduledTask;
+		if (st != null) {
+			st.cancel(false);
+			scheduledTask = null;
+		}
+		if (log.isTraceEnabled()) {
+			log.trace("[{}} clean task stopped.", poolsMap.getPoolsName());
+		}
 	}
 
 }

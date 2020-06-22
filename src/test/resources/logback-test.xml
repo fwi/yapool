@@ -11,6 +11,7 @@
 	<logger name="com.github.fwi.yapool" level="debug" />
 	<logger name="com.github.fwi.yapool.PoolPruner" level="debug" />
 	<logger name="com.github.fwi.yapool.PoolsMap" level="debug" />
+	<logger name="com.github.fwi.yapool.PoolsMapCleanTask" level="debug" />
 
 	<root level="info">
 		<appender-ref ref="STDOUT" />

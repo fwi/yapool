@@ -76,7 +76,7 @@ that have the same base-class but different configurations. For example, SMTP-co
 the type of connection is the same, but the configuration of the connection is a little bit different.
 A `PoolsMap` requires the use of a `IPoolsMapFactory` which has some strict requirements,
 see the [Javadoc for the interface](./src/main/java/com/github/fwi/yapool/IPoolsMapFactory.java).
-For now, `PoolsMap` is only demonstrated in the related test-class [TestPoolsMap](./src/test/java/com/github/fwi/yapool/TestPoolsMap.java). 
+For now, `PoolsMap` usage is only demonstrated in the related test-class [TestPoolsMap](./src/test/java/com/github/fwi/yapool/TestPoolsMap.java). 
 
 A special-purpose `ObjectPool` is available in the `com.github.fwi.yapool.object` package.
 This pool has virtually no limit on size (65k) and no maximum lease-time, but does have an idle-timeout.

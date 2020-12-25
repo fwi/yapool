@@ -15,7 +15,7 @@ public class PruneTask implements Runnable {
 
 	private final PrunedPool<?> pool;
 	private final ScheduledExecutorService executor;
-	private ScheduledFuture<?> scheduledTask;
+	private volatile ScheduledFuture<?> scheduledTask;
 	private volatile boolean stop;
 	private volatile boolean started;
 	private PoolPruner pruner;
@@ -57,8 +57,9 @@ public class PruneTask implements Runnable {
 		
 		if (stop) return;
 		stop = true;
-		if (scheduledTask != null) {
-			scheduledTask.cancel(false);
+		ScheduledFuture<?> st = scheduledTask;
+		if (st != null) {
+			st.cancel(false);
 			scheduledTask = null;
 		}
 		if (pruner != null) {

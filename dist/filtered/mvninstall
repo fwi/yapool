@@ -1,1 +1,2 @@
-mvn install:install-file -Dfile=${project.artifactId}-${project.version}.jar -DpomFile=${project.artifactId}-${project.version}-pom.xml -Dsources=${project.artifactId}-${project.version}-sources.jar
+mvn install:install-file -Dfile=${project.artifactId}-${project.version}.jar -DpomFile=${project.artifactId}-${project.version}-pom.xml -Dsources=${project.artifactId}-${project.version}-sources.jar -Djavadoc=${project.artifactId}-${project.version}-javadoc.jar
+mvn install:install-file -Dfile=${project.artifactId}-${project.version}-test-sources.jar -DgroupId=${project.groupId} -DartifactId=${project.artifactId} -Dversion=${project.version} -Dclassifier=test-sources -Dpackaging=test-jar 

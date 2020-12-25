@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.fwi</groupId>
 	<artifactId>yapool</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0-SNAPSHOT</version>
 
 	<url>https://github.com/fwi/yapool</url>
 	<properties>
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-				<version>4.13</version>
+				<version>4.13.1</version>
 				<scope>test</scope>
 		</dependency>
 		<dependency>

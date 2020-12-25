@@ -10,6 +10,7 @@ Yapool can emit events for pool related actions (release, destroy, acquire, etc.
 Yapool events can be used to gather statistics but also provide entrypoints for customizations.
 
 Pool implementations inherit each other from basic to full-featured: `IPool > Pool > BoundPool > PrunedPool`
+Finally, `PoolsMap` is available to manage a "Pool of Pools".
 
 A pool needs an `IPoolFactory` to create, validate and destroy pool resources.
 A simple pool creation example:
@@ -70,6 +71,13 @@ Pool performance statistics can be reported using the `com.github.fwi.yapool.lis
 which can be added to the `PrunedPool` as a listener just like the `LeaserAcquiredTrace` class.
 Note that this class is for debugging purposes only, this class is not suitable for production.
 
+The `PoolsMap` or "pool of pools" implementation can be used to manage resources 
+that have the same base-class but different configurations. For example, SMTP-connections to different servers:
+the type of connection is the same, but the configuration of the connection is a little bit different.
+A `PoolsMap` requires the use of a `IPoolsMapFactory` which has some strict requirements,
+see the [Javadoc for the interface](./src/main/java/com/github/fwi/yapool/IPoolsMapFactory.java).
+For now, `PoolsMap` usage is only demonstrated in the related test-class [TestPoolsMap](./src/test/java/com/github/fwi/yapool/TestPoolsMap.java). 
+
 A special-purpose `ObjectPool` is available in the `com.github.fwi.yapool.object` package.
 This pool has virtually no limit on size (65k) and no maximum lease-time, but does have an idle-timeout.
 Such an object-pool can be useful in situations where objects should be re-used
@@ -103,3 +111,7 @@ Zip project:
 
 	mvn assembly:single -Pzip
 
+# Improvements / TODOs
+
+- Do not create a resource when a resource was retuned to the pool and available (idle) in the mean time.
+- Metrics using JMX and something like Micrometer/Dropwizard Metrics.

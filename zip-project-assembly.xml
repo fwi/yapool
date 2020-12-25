@@ -14,4 +14,11 @@
 			</excludes>
 		</fileSet>
 	</fileSets>
+	<files>
+		<file>
+			<source>.gitignore</source>
+			<outputDirectory></outputDirectory>
+			<filtered>false</filtered>
+		</file>
+	</files>
 </assembly>

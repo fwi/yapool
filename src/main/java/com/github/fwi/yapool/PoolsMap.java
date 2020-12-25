@@ -48,6 +48,10 @@ public class PoolsMap<T, K> {
 	private String poolsName = getClass().getSimpleName() + "[" + hashCode() + "]";
 
 	protected final ConcurrentHashMap<K, PoolsMapPool<T>> poolsMap = new ConcurrentHashMap<>();
+	/**
+	 * Used to prevent creating two pools of the same type
+	 * and to prevent creating pools while closing this pools-map.
+	 */
 	protected final ReentrantLock poolCreateLock = new ReentrantLock();
 	protected final IPoolsMapFactory<T, K> poolsFactory;
 	protected final PoolPruner poolsPruner;
@@ -144,6 +148,8 @@ public class PoolsMap<T, K> {
 			} else {
 				lockPool.getUseLock().readLock().lock();
 				if (lockPool.getPool().isClosed()) {
+					// pool was removed from pools-map in clean-method,
+					// this will happen rarely.
 					try {
 						ensureNotClosed();
 						if (poolsMap.containsValue(lockPool)) {
@@ -156,6 +162,7 @@ public class PoolsMap<T, K> {
 					}
 					lockPool = null;
 				}
+				// else pool is open and we keep the read-lock.
 			}
 		} // while lockpool null
 		T t = null;

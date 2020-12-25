@@ -184,8 +184,11 @@ public class TestPrunedPool {
 		events.register = true;
 		p.open(0);
 		Long l = p.acquire();
-		TestUtil.runPruner(p);
 		try {
+			// shared test pruner may already be running 
+			// and can therefor throw an interrupted-exception almost immediately 
+			// (typically after a cold start with "mvn test").
+			TestUtil.runPruner(p);
 			Thread.sleep(50L);
 			fail("Should have been interrupted.");
 		} catch (InterruptedException ie) {
